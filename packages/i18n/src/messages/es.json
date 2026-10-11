@@ -1,0 +1,32 @@
+{
+  "common": {
+    "appName": "Status Page",
+    "language": "Idioma",
+    "poweredBy": "Desarrollado con Status Page"
+  },
+  "status": {
+    "operational": "Operativo",
+    "under_maintenance": "En mantenimiento",
+    "degraded_performance": "Rendimiento degradado",
+    "partial_outage": "Interrupción parcial",
+    "major_outage": "Interrupción total"
+  },
+  "overall": {
+    "operational": "Todos los sistemas operativos",
+    "under_maintenance": "Mantenimiento en curso",
+    "degraded_performance": "Algunos sistemas con rendimiento degradado",
+    "partial_outage": "Interrupción parcial en algunos sistemas",
+    "major_outage": "Interrupción total en algunos sistemas"
+  },
+  "incident": {
+    "investigating": "Investigando",
+    "identified": "Identificado",
+    "monitoring": "Monitoreando",
+    "resolved": "Resuelto"
+  },
+  "home": {
+    "components": "Componentes",
+    "noComponents": "Aún no hay componentes registrados.",
+    "pastIncidents": "Incidentes anteriores"
+  }
+}

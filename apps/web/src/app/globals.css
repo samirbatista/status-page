@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens de tema. Na F2 estes valores passam a vir da configuração visual de
+ * cada página (cores da marca e de cada status).
+ */
+@theme {
+  --color-brand: #1f6feb;
+  --color-status-operational: #1a7f37;
+  --color-status-under_maintenance: #0969da;
+  --color-status-degraded_performance: #bf8700;
+  --color-status-partial_outage: #d4610b;
+  --color-status-major_outage: #cf222e;
+}
+
+:root {
+  --background: #f6f8fa;
+  --surface: #ffffff;
+  --foreground: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d1117;
+    --surface: #151b23;
+    --foreground: #f0f6fc;
+    --muted: #9198a1;
+    --border: #3d444d;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
