@@ -2,9 +2,11 @@
   "common": {
     "appName": "Status Page",
     "language": "Language",
-    "poweredBy": "Powered by Status Page"
+    "poweredBy": "Powered by Status Page",
+    "history": "Incident history"
   },
   "status": {
+    "label": "Status",
     "operational": "Operational",
     "under_maintenance": "Under maintenance",
     "degraded_performance": "Degraded performance",
@@ -22,11 +24,300 @@
     "investigating": "Investigating",
     "identified": "Identified",
     "monitoring": "Monitoring",
-    "resolved": "Resolved"
+    "resolved": "Resolved",
+    "impact": {
+      "none": "No impact",
+      "minor": "Minor impact",
+      "major": "Major impact",
+      "critical": "Critical impact"
+    }
+  },
+  "maintenance": {
+    "window": "Window",
+    "affects": "Affects",
+    "status": {
+      "scheduled": "Scheduled",
+      "in_progress": "In progress",
+      "completed": "Completed"
+    },
+    "defaultBody": {
+      "scheduled": "Maintenance scheduled.",
+      "in_progress": "Maintenance has started.",
+      "completed": "Maintenance has been completed."
+    }
   },
   "home": {
     "components": "Components",
     "noComponents": "No components registered yet.",
-    "pastIncidents": "Past incidents"
+    "pastIncidents": "Past incidents",
+    "noPastIncidents": "No incidents in the last {days} days.",
+    "emptyTitle": "No published page",
+    "emptyBody": "Create a public status page in the admin panel.",
+    "goToAdmin": "Go to the admin panel"
+  },
+  "uptime": {
+    "aria": "Uptime over the last {days} days",
+    "noData": "No data",
+    "dayUptime": "{value} uptime",
+    "majorMinutes": "{minutes} min of major outage",
+    "partialMinutes": "{minutes} min of partial outage",
+    "noDowntime": "No downtime recorded",
+    "daysAgo": "{days} days ago",
+    "uptimeValue": "{value} uptime",
+    "today": "Today"
+  },
+  "history": {
+    "previous": "Previous",
+    "next": "Next",
+    "incidents": "Incidents",
+    "noIncidents": "No incidents this month.",
+    "maintenances": "Maintenance",
+    "noMaintenances": "No completed maintenance this month."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "invalid_credentials": "Invalid email or password.",
+    "too_many_requests": "Too many attempts. Wait {seconds} seconds and try again.",
+    "password_policy": "The password does not meet the policy:",
+    "password": {
+      "too_short": "use at least 12 characters",
+      "too_long": "use at most 128 characters",
+      "common": "it is a very common password",
+      "contains_email": "it must not contain your email",
+      "repetitive": "it has too many repeated characters"
+    },
+    "validation_failed": "Please check the form fields.",
+    "forbidden": "You are not allowed to do this.",
+    "unauthenticated": "Your session has expired. Please sign in again.",
+    "slug_taken": "A page with this address already exists.",
+    "email_taken": "A user with this email already exists.",
+    "last_owner": "At least one active Owner is required.",
+    "invalid_current_password": "The current password is incorrect.",
+    "template_name_taken": "A template with this name already exists.",
+    "maintenance_in_progress": "The maintenance is in progress; complete it first.",
+    "maintenance_completed": "The maintenance has already been completed.",
+    "invalid_window": "The end must be after the start.",
+    "invalid_timezone": "Invalid time zone.",
+    "layout_mismatch": "The page changed while you were editing. Reload and try again.",
+    "component_not_found": "Component not found on this page."
+  },
+  "admin": {
+    "title": "Admin",
+    "notify": "Notify subscribers",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "login": {
+      "title": "Sign in to the admin panel",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…"
+    },
+    "nav": {
+      "brand": "Status Page",
+      "pages": "Pages",
+      "newPage": "New page",
+      "users": "Users",
+      "audit": "Audit log",
+      "profile": "My profile",
+      "logout": "Sign out"
+    },
+    "home": {
+      "noPagesOwner": "There are no pages yet.",
+      "createFirst": "Create the first page",
+      "noPagesMember": "You have not been added to any page yet. Ask an administrator."
+    },
+    "page": {
+      "role": {
+        "viewer": "Viewer",
+        "operator": "Operator",
+        "admin": "Admin",
+        "owner": "Owner"
+      },
+      "viewPublic": "View public page",
+      "private": "Private page",
+      "tabs": {
+        "overview": "Overview",
+        "incidents": "Incidents",
+        "maintenances": "Maintenance",
+        "components": "Components",
+        "templates": "Templates",
+        "team": "Team",
+        "settings": "Settings"
+      }
+    },
+    "overview": {
+      "activeIncidents": "Active incidents",
+      "newIncident": "New incident",
+      "noActiveIncidents": "No active incidents.",
+      "maintenances": "Scheduled and in-progress maintenance",
+      "noMaintenances": "No upcoming maintenance.",
+      "components": "Components",
+      "noComponents": "No components registered."
+    },
+    "incidents": {
+      "heading": "Incidents",
+      "new": "New incident",
+      "empty": "No incidents recorded.",
+      "backfilled": "backfilled",
+      "older": "Older",
+      "template": "Template",
+      "noTemplate": "No template",
+      "title": "Title",
+      "status": "Status",
+      "impact": "Impact",
+      "message": "Message",
+      "affected": "Affected components",
+      "noComponents": "Add components to link them to incidents.",
+      "backfill": "Record a past incident (backfill)",
+      "startedAt": "Start",
+      "resolvedAt": "End",
+      "backfillHint": "The incident is created already resolved and counts toward uptime history, without changing the components' current status.",
+      "create": "Publish incident",
+      "resolveHint": "When resolving, affected components that are not selected go back to Operational.",
+      "postUpdate": "Post update",
+      "confirmDelete": "Delete this incident? Uptime history is kept.",
+      "timeline": "Timeline",
+      "details": "Details",
+      "componentStatusFor": "{name} status"
+    },
+    "maintenances": {
+      "heading": "Maintenance",
+      "new": "New maintenance",
+      "empty": "No maintenance recorded.",
+      "older": "Older",
+      "title": "Title",
+      "start": "Start",
+      "end": "End",
+      "message": "Message",
+      "messageHint": "Optional when starting or completing; without text, the page shows a default message.",
+      "components": "Components under maintenance",
+      "autoStart": "Start automatically at the scheduled time",
+      "autoComplete": "Complete automatically at the scheduled time",
+      "manualStart": "Manual start",
+      "manualComplete": "Manual completion",
+      "create": "Schedule maintenance",
+      "postUpdate": "Post update",
+      "startNow": "Start now",
+      "completeNow": "Complete now",
+      "confirmDelete": "Delete this maintenance?",
+      "automatic": "automatic",
+      "actions": "Actions"
+    },
+    "components": {
+      "ungrouped": "Ungrouped",
+      "emptyGroup": "No components in this group.",
+      "shared": "Also shown on {count, plural, one {# other page} other {# other pages}}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "edit": "Edit",
+      "newComponent": "New component",
+      "newGroup": "New group",
+      "renameGroup": "New group name",
+      "rename": "Rename",
+      "expandByDefault": "Show expanded",
+      "collapseByDefault": "Show collapsed",
+      "confirmDeleteGroup": "Delete the group? Its components become ungrouped.",
+      "name": "Name",
+      "group": "Group",
+      "description": "Description",
+      "showUptime": "Show uptime bar",
+      "confirmDetach": "Remove the component from this page? It stays on the other pages.",
+      "confirmDelete": "Delete the component and all its history?",
+      "detach": "Remove from this page",
+      "add": "Add"
+    },
+    "templates": {
+      "heading": "Incident templates",
+      "new": "New template",
+      "empty": "No templates yet.",
+      "edit": "Edit",
+      "name": "Template name",
+      "componentStatus": "Component status",
+      "keepStatus": "Keep current status",
+      "confirmDelete": "Delete this template?"
+    },
+    "team": {
+      "heading": "Page team",
+      "empty": "Nobody besides the Owners has access to this page.",
+      "role": "Role",
+      "remove": "Remove",
+      "add": "Add person",
+      "search": "Search by name or email",
+      "searchButton": "Search",
+      "addButton": "Add",
+      "hint": "Owners have access to every page and are not listed here. New users are created by an Owner under Users."
+    },
+    "users": {
+      "heading": "Users",
+      "disabled": "disabled",
+      "lastLogin": "Last sign-in",
+      "removeOwner": "Remove Owner",
+      "makeOwner": "Make Owner",
+      "newPasswordPrompt": "New password (at least 12 characters). The user's sessions will be ended.",
+      "resetPassword": "Reset password",
+      "enable": "Enable",
+      "disable": "Disable",
+      "new": "New user",
+      "name": "Name",
+      "email": "Email",
+      "initialPassword": "Initial password",
+      "passwordHint": "At least 12 characters. Ask the person to change it on first sign-in.",
+      "owner": "Owner (full access)",
+      "create": "Create user"
+    },
+    "settings": {
+      "heading": "Page settings",
+      "newHeading": "New page",
+      "name": "Name",
+      "slug": "Address",
+      "slugFixed": "The address cannot be changed.",
+      "slugHint": "Lowercase letters, numbers and hyphens. E.g. main-status",
+      "description": "Description",
+      "timezone": "Time zone",
+      "timezoneHint": "E.g. America/New_York. Defines the days of the uptime bar.",
+      "defaultLocale": "Default language",
+      "visibility": "Visibility",
+      "public": "Public",
+      "private": "Private",
+      "create": "Create page",
+      "isDefault": "This page is shown at the site root.",
+      "makeDefault": "Show at the site root",
+      "confirmDelete": "This deletes the page, its incidents and maintenance. Type \"{slug}\" to confirm.",
+      "delete": "Delete page"
+    },
+    "audit": {
+      "heading": "Audit log",
+      "export": "Export CSV",
+      "page": "Page",
+      "allPages": "All",
+      "action": "Action",
+      "entity": "Entity",
+      "filter": "Filter",
+      "empty": "No entries found.",
+      "when": "When",
+      "who": "Who",
+      "details": "Details",
+      "system": "system",
+      "show": "show",
+      "older": "Older"
+    },
+    "profile": {
+      "heading": "My profile",
+      "password": "Password",
+      "current": "Current password",
+      "new": "New password",
+      "hint": "At least 12 characters. Your other sessions will be ended.",
+      "confirm": "Confirm the new password",
+      "change": "Change password",
+      "mismatch": "The passwords do not match.",
+      "changed": "Password changed.",
+      "sessions": "Active sessions",
+      "thisSession": "this session",
+      "lastActive": "Last activity",
+      "revoke": "End",
+      "noLocalPassword": "Your account does not use a local password."
+    }
   }
 }

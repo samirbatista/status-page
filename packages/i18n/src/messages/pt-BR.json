@@ -2,9 +2,11 @@
   "common": {
     "appName": "Status Page",
     "language": "Idioma",
-    "poweredBy": "Desenvolvido com Status Page"
+    "poweredBy": "Desenvolvido com Status Page",
+    "history": "Histórico de incidentes"
   },
   "status": {
+    "label": "Status",
     "operational": "Operacional",
     "under_maintenance": "Em manutenção",
     "degraded_performance": "Desempenho degradado",
@@ -22,11 +24,300 @@
     "investigating": "Investigando",
     "identified": "Identificado",
     "monitoring": "Monitorando",
-    "resolved": "Resolvido"
+    "resolved": "Resolvido",
+    "impact": {
+      "none": "Sem impacto",
+      "minor": "Impacto baixo",
+      "major": "Impacto alto",
+      "critical": "Impacto crítico"
+    }
+  },
+  "maintenance": {
+    "window": "Janela",
+    "affects": "Afeta",
+    "status": {
+      "scheduled": "Agendada",
+      "in_progress": "Em andamento",
+      "completed": "Concluída"
+    },
+    "defaultBody": {
+      "scheduled": "Manutenção agendada.",
+      "in_progress": "A manutenção começou.",
+      "completed": "A manutenção foi concluída."
+    }
   },
   "home": {
     "components": "Componentes",
     "noComponents": "Nenhum componente cadastrado ainda.",
-    "pastIncidents": "Incidentes anteriores"
+    "pastIncidents": "Incidentes anteriores",
+    "noPastIncidents": "Nenhum incidente nos últimos {days} dias.",
+    "emptyTitle": "Nenhuma página publicada",
+    "emptyBody": "Crie uma página de status pública no painel administrativo.",
+    "goToAdmin": "Ir para o painel"
+  },
+  "uptime": {
+    "aria": "Disponibilidade dos últimos {days} dias",
+    "noData": "Sem dados",
+    "dayUptime": "{value} de disponibilidade",
+    "majorMinutes": "{minutes} min de interrupção total",
+    "partialMinutes": "{minutes} min de interrupção parcial",
+    "noDowntime": "Nenhuma interrupção registrada",
+    "daysAgo": "{days} dias atrás",
+    "uptimeValue": "{value} de disponibilidade",
+    "today": "Hoje"
+  },
+  "history": {
+    "previous": "Anterior",
+    "next": "Próximo",
+    "incidents": "Incidentes",
+    "noIncidents": "Nenhum incidente neste mês.",
+    "maintenances": "Manutenções",
+    "noMaintenances": "Nenhuma manutenção concluída neste mês."
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "invalid_credentials": "E-mail ou senha inválidos.",
+    "too_many_requests": "Muitas tentativas. Aguarde {seconds} segundos e tente de novo.",
+    "password_policy": "A senha não atende à política:",
+    "password": {
+      "too_short": "use pelo menos 12 caracteres",
+      "too_long": "use no máximo 128 caracteres",
+      "common": "é uma senha muito comum",
+      "contains_email": "não pode conter o seu e-mail",
+      "repetitive": "tem caracteres repetidos demais"
+    },
+    "validation_failed": "Verifique os campos do formulário.",
+    "forbidden": "Você não tem permissão para esta ação.",
+    "unauthenticated": "Sua sessão expirou. Entre novamente.",
+    "slug_taken": "Já existe uma página com este endereço.",
+    "email_taken": "Já existe um usuário com este e-mail.",
+    "last_owner": "É preciso manter ao menos um Dono ativo.",
+    "invalid_current_password": "A senha atual está incorreta.",
+    "template_name_taken": "Já existe um template com este nome.",
+    "maintenance_in_progress": "A manutenção está em andamento; conclua-a antes.",
+    "maintenance_completed": "A manutenção já foi concluída.",
+    "invalid_window": "O fim precisa ser depois do início.",
+    "invalid_timezone": "Fuso horário inválido.",
+    "layout_mismatch": "A página mudou enquanto você editava. Recarregue e tente de novo.",
+    "component_not_found": "Componente não encontrado nesta página."
+  },
+  "admin": {
+    "title": "Painel",
+    "notify": "Notificar assinantes",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "login": {
+      "title": "Entrar no painel",
+      "email": "E-mail",
+      "password": "Senha",
+      "submit": "Entrar",
+      "submitting": "Entrando…"
+    },
+    "nav": {
+      "brand": "Status Page",
+      "pages": "Páginas",
+      "newPage": "Nova página",
+      "users": "Usuários",
+      "audit": "Auditoria",
+      "profile": "Meu perfil",
+      "logout": "Sair"
+    },
+    "home": {
+      "noPagesOwner": "Ainda não há páginas.",
+      "createFirst": "Criar a primeira página",
+      "noPagesMember": "Você ainda não foi adicionado a nenhuma página. Fale com um administrador."
+    },
+    "page": {
+      "role": {
+        "viewer": "Leitor",
+        "operator": "Operador",
+        "admin": "Admin",
+        "owner": "Dono"
+      },
+      "viewPublic": "Ver página pública",
+      "private": "Página privada",
+      "tabs": {
+        "overview": "Visão geral",
+        "incidents": "Incidentes",
+        "maintenances": "Manutenções",
+        "components": "Componentes",
+        "templates": "Templates",
+        "team": "Equipe",
+        "settings": "Configurações"
+      }
+    },
+    "overview": {
+      "activeIncidents": "Incidentes ativos",
+      "newIncident": "Novo incidente",
+      "noActiveIncidents": "Nenhum incidente ativo.",
+      "maintenances": "Manutenções agendadas e em andamento",
+      "noMaintenances": "Nenhuma manutenção prevista.",
+      "components": "Componentes",
+      "noComponents": "Nenhum componente cadastrado."
+    },
+    "incidents": {
+      "heading": "Incidentes",
+      "new": "Novo incidente",
+      "empty": "Nenhum incidente registrado.",
+      "backfilled": "retroativo",
+      "older": "Mais antigos",
+      "template": "Template",
+      "noTemplate": "Sem template",
+      "title": "Título",
+      "status": "Status",
+      "impact": "Impacto",
+      "message": "Mensagem",
+      "affected": "Componentes afetados",
+      "noComponents": "Cadastre componentes para associá-los a incidentes.",
+      "backfill": "Registrar incidente passado (retroativo)",
+      "startedAt": "Início",
+      "resolvedAt": "Fim",
+      "backfillHint": "O incidente entra já resolvido e conta no histórico de disponibilidade, sem alterar o status atual dos componentes.",
+      "create": "Publicar incidente",
+      "resolveHint": "Ao resolver, os componentes afetados que não forem marcados voltam a Operacional.",
+      "postUpdate": "Publicar atualização",
+      "confirmDelete": "Excluir este incidente? O histórico de disponibilidade é mantido.",
+      "timeline": "Linha do tempo",
+      "details": "Detalhes",
+      "componentStatusFor": "Status de {name}"
+    },
+    "maintenances": {
+      "heading": "Manutenções",
+      "new": "Nova manutenção",
+      "empty": "Nenhuma manutenção registrada.",
+      "older": "Mais antigas",
+      "title": "Título",
+      "start": "Início",
+      "end": "Fim",
+      "message": "Mensagem",
+      "messageHint": "Opcional ao iniciar ou concluir; sem texto, a página mostra uma mensagem padrão.",
+      "components": "Componentes em manutenção",
+      "autoStart": "Iniciar automaticamente no horário",
+      "autoComplete": "Concluir automaticamente no horário",
+      "manualStart": "Início manual",
+      "manualComplete": "Conclusão manual",
+      "create": "Agendar manutenção",
+      "postUpdate": "Publicar atualização",
+      "startNow": "Iniciar agora",
+      "completeNow": "Concluir agora",
+      "confirmDelete": "Excluir esta manutenção?",
+      "automatic": "automático",
+      "actions": "Ações"
+    },
+    "components": {
+      "ungrouped": "Sem grupo",
+      "emptyGroup": "Nenhum componente neste grupo.",
+      "shared": "Também exibido em {count, plural, one {# outra página} other {# outras páginas}}",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "edit": "Editar",
+      "newComponent": "Novo componente",
+      "newGroup": "Novo grupo",
+      "renameGroup": "Novo nome do grupo",
+      "rename": "Renomear",
+      "expandByDefault": "Exibir aberto",
+      "collapseByDefault": "Exibir recolhido",
+      "confirmDeleteGroup": "Excluir o grupo? Os componentes ficam sem grupo.",
+      "name": "Nome",
+      "group": "Grupo",
+      "description": "Descrição",
+      "showUptime": "Exibir barra de disponibilidade",
+      "confirmDetach": "Remover o componente desta página? Ele continua nas outras páginas.",
+      "confirmDelete": "Excluir o componente e todo o seu histórico?",
+      "detach": "Remover desta página",
+      "add": "Adicionar"
+    },
+    "templates": {
+      "heading": "Templates de incidente",
+      "new": "Novo template",
+      "empty": "Nenhum template cadastrado.",
+      "edit": "Editar",
+      "name": "Nome do template",
+      "componentStatus": "Status dos componentes",
+      "keepStatus": "Manter o status atual",
+      "confirmDelete": "Excluir este template?"
+    },
+    "team": {
+      "heading": "Equipe da página",
+      "empty": "Ninguém além dos Donos tem acesso a esta página.",
+      "role": "Papel",
+      "remove": "Remover",
+      "add": "Adicionar pessoa",
+      "search": "Buscar por nome ou e-mail",
+      "searchButton": "Buscar",
+      "addButton": "Adicionar",
+      "hint": "Donos têm acesso a todas as páginas e não aparecem nesta lista. Novos usuários são criados por um Dono em Usuários."
+    },
+    "users": {
+      "heading": "Usuários",
+      "disabled": "desativado",
+      "lastLogin": "Último acesso",
+      "removeOwner": "Remover Dono",
+      "makeOwner": "Tornar Dono",
+      "newPasswordPrompt": "Nova senha (mínimo de 12 caracteres). As sessões do usuário serão encerradas.",
+      "resetPassword": "Redefinir senha",
+      "enable": "Reativar",
+      "disable": "Desativar",
+      "new": "Novo usuário",
+      "name": "Nome",
+      "email": "E-mail",
+      "initialPassword": "Senha inicial",
+      "passwordHint": "Mínimo de 12 caracteres. Peça à pessoa para trocá-la no primeiro acesso.",
+      "owner": "Dono (acesso total)",
+      "create": "Criar usuário"
+    },
+    "settings": {
+      "heading": "Configurações da página",
+      "newHeading": "Nova página",
+      "name": "Nome",
+      "slug": "Endereço",
+      "slugFixed": "O endereço não pode ser alterado.",
+      "slugHint": "Letras minúsculas, números e hífens. Ex.: status-principal",
+      "description": "Descrição",
+      "timezone": "Fuso horário",
+      "timezoneHint": "Ex.: America/Sao_Paulo. Define os dias da barra de disponibilidade.",
+      "defaultLocale": "Idioma padrão",
+      "visibility": "Visibilidade",
+      "public": "Pública",
+      "private": "Privada",
+      "create": "Criar página",
+      "isDefault": "Esta é a página exibida na raiz do site.",
+      "makeDefault": "Exibir na raiz do site",
+      "confirmDelete": "Isto exclui a página, seus incidentes e manutenções. Digite \"{slug}\" para confirmar.",
+      "delete": "Excluir página"
+    },
+    "audit": {
+      "heading": "Auditoria",
+      "export": "Exportar CSV",
+      "page": "Página",
+      "allPages": "Todas",
+      "action": "Ação",
+      "entity": "Entidade",
+      "filter": "Filtrar",
+      "empty": "Nenhum registro encontrado.",
+      "when": "Quando",
+      "who": "Quem",
+      "details": "Detalhes",
+      "system": "sistema",
+      "show": "ver",
+      "older": "Mais antigos"
+    },
+    "profile": {
+      "heading": "Meu perfil",
+      "password": "Senha",
+      "current": "Senha atual",
+      "new": "Nova senha",
+      "hint": "Mínimo de 12 caracteres. As outras sessões serão encerradas.",
+      "confirm": "Confirme a nova senha",
+      "change": "Trocar senha",
+      "mismatch": "As senhas não conferem.",
+      "changed": "Senha alterada.",
+      "sessions": "Sessões ativas",
+      "thisSession": "esta sessão",
+      "lastActive": "Última atividade",
+      "revoke": "Encerrar",
+      "noLocalPassword": "Sua conta não usa senha local."
+    }
   }
 }

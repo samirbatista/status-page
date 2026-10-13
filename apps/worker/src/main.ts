@@ -8,6 +8,7 @@ import {
   loadEnv,
   redisEnvSchema,
 } from '@status-page/config';
+import { runDueMaintenanceTransitions } from '@status-page/core';
 import { createPrismaClient } from '@status-page/db';
 import { onShutdown, QUEUES, startHealthServer } from '@status-page/runtime';
 import { purgeExpiredSessions } from './jobs.js';
@@ -31,6 +32,12 @@ await systemQueue.upsertJobScheduler(
   { pattern: '17 3 * * *' },
   { name: 'purge-expired-sessions' },
 );
+// Início e fim automáticos das manutenções programadas.
+await systemQueue.upsertJobScheduler(
+  'maintenance-transitions',
+  { every: 60_000 },
+  { name: 'maintenance-transitions' },
+);
 
 const worker = new Worker(
   QUEUES.system,
@@ -40,6 +47,13 @@ const worker = new Worker(
         const removed = await purgeExpiredSessions(prisma);
         log.info({ removed }, 'sessões expiradas removidas');
         return { removed };
+      }
+      case 'maintenance-transitions': {
+        const result = await runDueMaintenanceTransitions(prisma);
+        if (result.started.length || result.completed.length) {
+          log.info(result, 'manutenções atualizadas automaticamente');
+        }
+        return result;
       }
       default:
         throw new Error(`job desconhecido: ${job.name}`);
