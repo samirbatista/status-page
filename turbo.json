@@ -19,7 +19,7 @@
     },
     "test": {
       "dependsOn": ["^build", "generate"],
-      "env": ["DATABASE_URL", "REDIS_URL"]
+      "env": ["DATABASE_URL", "REDIS_URL", "TEST_DATABASE_URL", "TEST_REDIS_URL"]
     },
     "dev": {
       "dependsOn": ["^build", "generate"],

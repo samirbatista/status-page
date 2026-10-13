@@ -143,6 +143,9 @@ services:
       target: web
     image: status-page/web:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    environment:
+      # Renderização no servidor: o Next consulta a API pela rede interna.
+      API_INTERNAL_URL: http://api:3001
     healthcheck:
       <<: *node-healthcheck
       test:

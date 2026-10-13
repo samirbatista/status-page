@@ -13,6 +13,10 @@ export const apiEnvSchema = baseEnvSchema
   .extend(appSecretEnvSchema.shape)
   .extend({
     API_PORT: z.coerce.number().int().positive().default(3001),
+    /** Sessão expira após este tempo sem uso. */
+    SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(60),
+    /** Duração máxima da sessão, mesmo com uso contínuo. */
+    SESSION_MAX_HOURS: z.coerce.number().int().positive().default(12),
   });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

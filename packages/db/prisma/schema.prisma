@@ -1,5 +1,6 @@
-// Schema inicial (F0): identidade, páginas, componentes, auditoria e configurações.
-// Incidentes, manutenções, notificações e monitoramento entram nas fases seguintes.
+// F0: identidade, páginas, componentes, auditoria e configurações.
+// F1: incidentes, manutenções e templates de incidente.
+// Notificações e monitoramento entram nas fases seguintes.
 
 generator client {
   provider     = "prisma-client"
@@ -21,6 +22,26 @@ enum ComponentStatus {
   degraded_performance
   partial_outage
   major_outage
+}
+
+enum IncidentStatus {
+  investigating
+  identified
+  monitoring
+  resolved
+}
+
+enum IncidentImpact {
+  none
+  minor
+  major
+  critical
+}
+
+enum MaintenanceStatus {
+  scheduled
+  in_progress
+  completed
 }
 
 enum PageVisibility {
@@ -55,10 +76,13 @@ model Page {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  domains    PageDomain[]
-  components PageComponent[]
-  groups     ComponentGroup[]
-  roles      UserPageRole[]
+  domains      PageDomain[]
+  components   PageComponent[]
+  groups       ComponentGroup[]
+  roles        UserPageRole[]
+  incidents    Incident[]
+  maintenances Maintenance[]
+  templates    IncidentTemplate[]
 
   @@map("pages")
 }
@@ -101,8 +125,10 @@ model Component {
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  pages   PageComponent[]
-  history ComponentStatusHistory[]
+  pages           PageComponent[]
+  history         ComponentStatusHistory[]
+  incidentUpdates IncidentUpdateComponent[]
+  maintenances    MaintenanceComponent[]
 
   @@map("components")
 }
@@ -140,6 +166,142 @@ model ComponentStatusHistory {
 }
 
 // ---------------------------------------------------------------------------
+// Incidentes e manutenções
+// ---------------------------------------------------------------------------
+
+model Incident {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  pageId      String         @map("page_id") @db.Uuid
+  title       String
+  status      IncidentStatus
+  impact      IncidentImpact @default(minor)
+  /// Incidente registrado depois do fato; não altera o status atual dos componentes.
+  backfilled  Boolean        @default(false)
+  startedAt   DateTime       @map("started_at") @db.Timestamptz(3)
+  resolvedAt  DateTime?      @map("resolved_at") @db.Timestamptz(3)
+  createdById String?        @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page      Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  updates   IncidentUpdate[]
+
+  @@index([pageId, status])
+  @@index([pageId, startedAt])
+  @@map("incidents")
+}
+
+model IncidentUpdate {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  incidentId  String         @map("incident_id") @db.Uuid
+  status      IncidentStatus
+  body        String
+  /// Se os assinantes devem ser notificados (usado a partir da F4).
+  notify      Boolean        @default(true)
+  /// Momento exibido na linha do tempo (pode ser passado em incidentes retroativos).
+  displayAt   DateTime       @map("display_at") @db.Timestamptz(3)
+  createdById String?        @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident   Incident                  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  createdBy  User?                     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  components IncidentUpdateComponent[]
+
+  @@index([incidentId, displayAt])
+  @@map("incident_updates")
+}
+
+/// Status de cada componente afetado, definido em uma atualização do incidente.
+model IncidentUpdateComponent {
+  updateId    String          @map("update_id") @db.Uuid
+  componentId String          @map("component_id") @db.Uuid
+  status      ComponentStatus
+
+  update    IncidentUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  component Component      @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@id([updateId, componentId])
+  @@index([componentId])
+  @@map("incident_update_components")
+}
+
+model Maintenance {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  pageId         String            @map("page_id") @db.Uuid
+  title          String
+  status         MaintenanceStatus @default(scheduled)
+  scheduledStart DateTime          @map("scheduled_start") @db.Timestamptz(3)
+  scheduledEnd   DateTime          @map("scheduled_end") @db.Timestamptz(3)
+  /// Inicia e conclui sozinha nos horários agendados.
+  autoStart      Boolean           @default(true) @map("auto_start")
+  autoComplete   Boolean           @default(true) @map("auto_complete")
+  startedAt      DateTime?         @map("started_at") @db.Timestamptz(3)
+  completedAt    DateTime?         @map("completed_at") @db.Timestamptz(3)
+  createdById    String?           @map("created_by_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page       Page                   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy  User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  updates    MaintenanceUpdate[]
+  components MaintenanceComponent[]
+
+  @@index([status, scheduledStart])
+  @@index([pageId, scheduledStart])
+  @@map("maintenances")
+}
+
+model MaintenanceUpdate {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  maintenanceId String            @map("maintenance_id") @db.Uuid
+  status        MaintenanceStatus
+  body          String
+  notify        Boolean           @default(true)
+  createdById   String?           @map("created_by_id") @db.Uuid
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  maintenance Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+  createdBy   User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([maintenanceId, createdAt])
+  @@map("maintenance_updates")
+}
+
+model MaintenanceComponent {
+  maintenanceId  String           @map("maintenance_id") @db.Uuid
+  componentId    String           @map("component_id") @db.Uuid
+  /// Status do componente no início da manutenção, restaurado ao concluir.
+  previousStatus ComponentStatus? @map("previous_status")
+
+  maintenance Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+  component   Component   @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@id([maintenanceId, componentId])
+  @@index([componentId])
+  @@map("maintenance_components")
+}
+
+model IncidentTemplate {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  pageId          String           @map("page_id") @db.Uuid
+  name            String
+  title           String
+  body            String
+  status          IncidentStatus   @default(investigating)
+  impact          IncidentImpact   @default(minor)
+  componentIds    String[]         @map("component_ids") @db.Uuid
+  componentStatus ComponentStatus? @map("component_status")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, name])
+  @@map("incident_templates")
+}
+
+// ---------------------------------------------------------------------------
 // Identidade e acesso
 // ---------------------------------------------------------------------------
 
@@ -155,11 +317,15 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  identities    UserIdentity[]
-  pageRoles     UserPageRole[]
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  statusChanges ComponentStatusHistory[]
+  identities         UserIdentity[]
+  pageRoles          UserPageRole[]
+  sessions           Session[]
+  auditLogs          AuditLog[]
+  statusChanges      ComponentStatusHistory[]
+  incidents          Incident[]
+  incidentUpdates    IncidentUpdate[]
+  maintenances       Maintenance[]
+  maintenanceUpdates MaintenanceUpdate[]
 
   @@map("users")
 }

@@ -1,50 +1,39 @@
-import { type ComponentStatus, isLocale, overallStatus } from '@status-page/shared';
+import { isLocale } from '@status-page/shared';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { LanguageSwitcher } from './language-switcher';
+import { StatusPageView } from '@/components/public/status-page-view';
+import { Link } from '@/i18n/navigation';
+import { ApiError, serverApi } from '@/lib/server-api';
+import { type PublicSummary } from '@/lib/types';
 
-// Classes completas (e não interpoladas) para o Tailwind detectá-las no build.
-const BANNER_CLASS: Record<ComponentStatus, string> = {
-  operational: 'bg-status-operational',
-  under_maintenance: 'bg-status-under_maintenance',
-  degraded_performance: 'bg-status-degraded_performance',
-  partial_outage: 'bg-status-partial_outage',
-  major_outage: 'bg-status-major_outage',
-};
+export const dynamic = 'force-dynamic';
 
-/**
- * Página pública provisória (F0). Na F1 ela passa a ler páginas, componentes e
- * incidentes da API.
- */
+/** Raiz do site: exibe a página definida como padrão. */
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
-  const t = await getTranslations();
-  const status = overallStatus([]);
 
-  return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-12">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">{t('common.appName')}</h1>
-        <LanguageSwitcher />
-      </header>
+  let slug: string | null = null;
+  try {
+    slug = (await serverApi<{ slug: string }>('/public/default')).slug;
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) throw error;
+  }
 
-      <section
-        data-status={status}
-        className={`rounded-lg px-6 py-4 text-lg font-medium text-white ${BANNER_CLASS[status]}`}
-      >
-        {t(`overall.${status}`)}
-      </section>
+  if (!slug) {
+    const t = await getTranslations('home');
+    return (
+      <main className="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-24 text-center">
+        <h1 className="text-2xl font-semibold">{t('emptyTitle')}</h1>
+        <p className="text-[var(--muted)]">{t('emptyBody')}</p>
+        <Link href="/admin" className="text-brand hover:underline">
+          {t('goToAdmin')}
+        </Link>
+      </main>
+    );
+  }
 
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-        <h2 className="border-b border-[var(--border)] px-6 py-3 font-medium">
-          {t('home.components')}
-        </h2>
-        <p className="px-6 py-4 text-[var(--muted)]">{t('home.noComponents')}</p>
-      </section>
-
-      <footer className="text-center text-sm text-[var(--muted)]">{t('common.poweredBy')}</footer>
-    </main>
-  );
+  const summary = await serverApi<PublicSummary>(`/public/pages/${encodeURIComponent(slug)}`);
+  return <StatusPageView summary={summary} />;
 }

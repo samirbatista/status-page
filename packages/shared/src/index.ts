@@ -1,3 +1,5 @@
 export * from './locales.js';
+export * from './password.js';
 export * from './roles.js';
+export * from './schemas.js';
 export * from './status.js';

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@status-page/config": "workspace:*",
+    "@status-page/core": "workspace:*",
     "@status-page/db": "workspace:*",
     "@status-page/runtime": "workspace:*",
     "bullmq": "^6.3.12",
