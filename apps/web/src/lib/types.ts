@@ -1,4 +1,6 @@
 import {
+  type PrivateAccessMode,
+  type Theme,
   type ComponentStatus,
   type IncidentImpact,
   type IncidentStatus,
@@ -22,6 +24,10 @@ export interface PublicPage {
   description: string | null;
   timezone: string;
   defaultLocale: string;
+  visibility: 'public' | 'private';
+  /** Exibindo o rascunho do tema (pré-visualização de um Admin). */
+  preview: boolean;
+  theme: Theme;
 }
 
 export interface PublicIncidentUpdate {
@@ -89,7 +95,33 @@ export interface AdminPage {
   defaultLocale: string;
   timezone: string;
   visibility: 'public' | 'private';
+  privateAccess: PrivateAccessMode;
+  allowedCidrs: string[];
   isDefault: boolean;
+}
+
+export interface ThemeState {
+  draft: Theme;
+  published: Theme;
+  hasUnpublishedChanges: boolean;
+  publishedAt: string | null;
+}
+
+export interface UploadInfo {
+  id: string;
+  kind: 'image' | 'font';
+  filename: string;
+  contentType: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface DomainInfo {
+  id: string;
+  hostname: string;
+  verifiedAt: string | null;
+  createdAt: string;
+  record: { type: 'TXT'; name: string; value: string };
 }
 
 export interface Structure {

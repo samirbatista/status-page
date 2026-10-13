@@ -1,10 +1,24 @@
-import { Controller, Get, NotFoundException, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { z } from 'zod';
+import { cacheControlFor } from '../access/page-access.js';
+import { type AuthContext } from '../common/auth.types.js';
 import { Public } from '../common/decorators.js';
+import { CurrentAuth } from '../common/request-meta.js';
 import { ZodPipe } from '../common/zod.pipe.js';
-import { PublicService } from './public.service.js';
+import { PublicService, type Viewer } from './public.service.js';
 
 const historyQuery = z.object({ month: z.string() });
+const summaryQuery = z.object({ preview: z.enum(['draft']).optional() });
 
 @Public()
 @Controller('public')
@@ -20,28 +34,58 @@ export class PublicController {
   }
 
   @Get('pages/:slug')
-  summary(@Param('slug') slug: string) {
-    return this.publicData.summary(slug);
+  async summary(
+    @Param('slug') slug: string,
+    @Query(new ZodPipe(summaryQuery)) query: z.infer<typeof summaryQuery>,
+    @CurrentAuth() auth: AuthContext | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const viewer: Viewer = { auth, ip: req.ip, preview: query.preview === 'draft' };
+    const summary = await this.publicData.summary(slug, viewer);
+    res.set(
+      'Cache-Control',
+      summary.page.preview ? 'private, no-store' : cacheControlFor(summary.page),
+    );
+    return summary;
   }
 
   @Get('pages/:slug/history')
-  history(
+  async history(
     @Param('slug') slug: string,
     @Query(new ZodPipe(historyQuery)) query: z.infer<typeof historyQuery>,
+    @CurrentAuth() auth: AuthContext | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.publicData.history(slug, query.month);
+    const data = await this.publicData.history(slug, query.month, { auth, ip: req.ip });
+    res.set('Cache-Control', cacheControlFor(data.page));
+    return data;
   }
 
   @Get('pages/:slug/incidents/:incidentId')
-  incident(@Param('slug') slug: string, @Param('incidentId', ParseUUIDPipe) incidentId: string) {
-    return this.publicData.incident(slug, incidentId);
+  async incident(
+    @Param('slug') slug: string,
+    @Param('incidentId', ParseUUIDPipe) incidentId: string,
+    @CurrentAuth() auth: AuthContext | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.publicData.incident(slug, incidentId, { auth, ip: req.ip });
+    res.set('Cache-Control', cacheControlFor(data.page));
+    return data;
   }
 
   @Get('pages/:slug/maintenances/:maintenanceId')
-  maintenance(
+  async maintenance(
     @Param('slug') slug: string,
     @Param('maintenanceId', ParseUUIDPipe) maintenanceId: string,
+    @CurrentAuth() auth: AuthContext | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.publicData.maintenance(slug, maintenanceId);
+    const data = await this.publicData.maintenance(slug, maintenanceId, { auth, ip: req.ip });
+    res.set('Cache-Control', cacheControlFor(data.page));
+    return data;
   }
 }

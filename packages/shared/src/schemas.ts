@@ -75,7 +75,30 @@ export const pageCreateSchema = z.object({
   timezone: z.string().trim().min(1).max(64).default('America/Sao_Paulo'),
   visibility: z.enum(['public', 'private']).default('public'),
 });
-export const pageUpdateSchema = pageCreateSchema.omit({ slug: true }).partial();
+
+export const PRIVATE_ACCESS_MODES = ['login', 'ip', 'login_or_ip', 'login_and_ip'] as const;
+export type PrivateAccessMode = (typeof PRIVATE_ACCESS_MODES)[number];
+
+export const pageUpdateSchema = pageCreateSchema
+  .omit({ slug: true })
+  .partial()
+  .extend({
+    privateAccess: z.enum(PRIVATE_ACCESS_MODES).optional(),
+    /** Redes em notação CIDR (ex.: 10.0.0.0/8, 2001:db8::/32); validadas no servidor. */
+    allowedCidrs: z.array(z.string().trim().min(1).max(64)).max(100).optional(),
+  });
+
+export const domainCreateSchema = z.object({
+  hostname: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(253)
+    .regex(
+      /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/,
+      'domínio inválido',
+    ),
+});
 
 export const groupCreateSchema = z.object({
   name: text(120),

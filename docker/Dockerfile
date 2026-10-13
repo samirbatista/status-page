@@ -46,6 +46,8 @@ FROM ${NODE_IMAGE} AS node-app
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build-node --chown=node:node /out ./
+# Diretório dos uploads (volume na API): criado aqui para pertencer ao usuário node.
+RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 CMD ["node", "dist/main.js"]
 

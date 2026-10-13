@@ -1,17 +1,24 @@
 {
-	# Domínios personalizados com TLS on-demand chegam na F2.
 	admin off
+	# Domínios próprios: o certificado é emitido no primeiro acesso, mas só para
+	# domínios verificados no painel (a API responde a este "ask").
+	on_demand_tls {
+		ask http://api:3001/api/internal/tls-ask
+	}
 }
 
-# SITE_ADDRESS omitido = HTTP na porta 80 (rede interna); o compose.yaml usa :80 quando vazio.
-# Com um domínio (ex.: status.empresa.com.br) o Caddy emite o certificado automaticamente.
-{$SITE_ADDRESS::80} {
+(app) {
 	encode zstd gzip
 
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		-Server
+	}
+
+	# Rotas internas (como o "ask" do TLS) nunca ficam expostas.
+	handle /api/internal/* {
+		respond 404
 	}
 
 	handle /api/* {
@@ -21,4 +28,18 @@
 	handle {
 		reverse_proxy web:3000
 	}
+}
+
+# Domínio principal. SITE_ADDRESS omitido = HTTP na porta 80 (rede interna),
+# que também atende domínios próprios por HTTP.
+{$SITE_ADDRESS::80} {
+	import app
+}
+
+# Domínios próprios verificados, com HTTPS automático sob demanda.
+https:// {
+	tls {
+		on_demand
+	}
+	import app
 }

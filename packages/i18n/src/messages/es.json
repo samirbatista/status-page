@@ -3,7 +3,8 @@
     "appName": "Status Page",
     "language": "Idioma",
     "poweredBy": "Desarrollado con Status Page",
-    "history": "Historial de incidentes"
+    "history": "Historial de incidentes",
+    "support": "Soporte"
   },
   "status": {
     "label": "Estado",
@@ -99,7 +100,15 @@
     "invalid_window": "El fin debe ser posterior al inicio.",
     "invalid_timezone": "Zona horaria no válida.",
     "layout_mismatch": "La página cambió mientras editaba. Recargue e inténtelo de nuevo.",
-    "component_not_found": "Componente no encontrado en esta página."
+    "component_not_found": "Componente no encontrado en esta página.",
+    "invalid_cidr": "Hay redes con formato no válido. Use la notación CIDR, ej.: 10.0.0.0/8.",
+    "invalid_css": "El CSS tiene un error de sintaxis.",
+    "invalid_upload": "Archivo no válido para este campo.",
+    "unsupported_file_type": "Formato de archivo no admitido.",
+    "unsafe_svg": "El SVG contiene scripts o referencias externas y fue rechazado.",
+    "file_too_large": "El archivo supera el límite de 2 MB.",
+    "upload_in_use": "El archivo está en uso por el tema.",
+    "domain_taken": "Este dominio ya está registrado."
   },
   "admin": {
     "title": "Panel",
@@ -144,7 +153,8 @@
         "components": "Componentes",
         "templates": "Plantillas",
         "team": "Equipo",
-        "settings": "Configuración"
+        "settings": "Configuración",
+        "appearance": "Apariencia"
       }
     },
     "overview": {
@@ -285,7 +295,17 @@
       "isDefault": "Esta es la página que se muestra en la raíz del sitio.",
       "makeDefault": "Mostrar en la raíz del sitio",
       "confirmDelete": "Esto elimina la página, sus incidentes y mantenimientos. Escriba \"{slug}\" para confirmar.",
-      "delete": "Eliminar página"
+      "delete": "Eliminar página",
+      "privateAccess": "Acceso a la página privada",
+      "accessMode": "Quién puede ver",
+      "accessModes": {
+        "login": "Usuarios con rol en la página (inicio de sesión)",
+        "ip": "Cualquiera en las redes autorizadas",
+        "login_or_ip": "Inicio de sesión O red autorizada",
+        "login_and_ip": "Inicio de sesión Y red autorizada"
+      },
+      "allowedCidrs": "Redes autorizadas",
+      "allowedCidrsHint": "Una dirección o red por línea, en notación CIDR (ej.: 10.0.0.0/8, 2001:db8::/32)."
     },
     "audit": {
       "heading": "Auditoría",
@@ -318,6 +338,120 @@
       "lastActive": "Última actividad",
       "revoke": "Cerrar",
       "noLocalPassword": "Su cuenta no usa contraseña local."
+    },
+    "appearance": {
+      "none": "Ninguno",
+      "uploading": "Enviando…",
+      "upload": "Subir archivo",
+      "saveDraft": "Guardar borrador",
+      "publish": "Publicar",
+      "discard": "Descartar borrador",
+      "unsaved": "Cambios sin guardar",
+      "draftSaved": "Borrador guardado, aún no publicado",
+      "upToDate": "Publicado",
+      "published": "Tema publicado.",
+      "confirmDiscard": "¿Descartar el borrador y volver al tema publicado?",
+      "cssRemoved": "Se eliminaron partes del CSS por seguridad:",
+      "identity": "Identidad",
+      "images": {
+        "logoId": "Logo",
+        "logoDarkId": "Logo para tema oscuro",
+        "faviconId": "Favicon",
+        "headerImageId": "Imagen de cabecera",
+        "ogImageId": "Imagen para compartir"
+      },
+      "imageHints": {
+        "logoId": "PNG, SVG o WebP con fondo transparente. Hasta 2 MB.",
+        "logoDarkId": "Opcional: se usa cuando el visitante está en modo oscuro.",
+        "faviconId": "Icono de la pestaña del navegador (ICO, PNG o SVG).",
+        "headerImageId": "Fondo de la cabecera en el estilo \"Franja con imagen\".",
+        "ogImageId": "Se muestra al compartir el enlace (1200×630 recomendado)."
+      },
+      "colors": "Colores",
+      "mode": "Tema",
+      "modes": {
+        "light": "Claro",
+        "dark": "Oscuro",
+        "auto": "Automático (sigue el sistema)"
+      },
+      "lightPalette": "Paleta clara",
+      "darkPalette": "Paleta oscura",
+      "palette": {
+        "brand": "Color de marca",
+        "background": "Fondo",
+        "surface": "Tarjetas",
+        "text": "Texto",
+        "muted": "Texto secundario",
+        "border": "Bordes",
+        "link": "Enlaces"
+      },
+      "statusColors": "Colores de estado",
+      "typography": "Tipografía",
+      "fontSource": "Fuente",
+      "fonts": {
+        "system": "Fuente del sistema",
+        "google": "Google Fonts",
+        "upload": "Archivo propio"
+      },
+      "fontFamily": "Nombre de la familia",
+      "googleHint": "Exactamente como en Google Fonts, ej.: Inter, Open Sans.",
+      "uploadFontHint": "Nombre usado para la fuente enviada.",
+      "fontFile": "Archivo de fuente (WOFF2, WOFF, TTF u OTF)",
+      "layout": "Diseño",
+      "header": "Estilo de cabecera",
+      "headers": {
+        "simple": "Simple (logo a la izquierda)",
+        "centered": "Centrado",
+        "banner": "Franja con imagen"
+      },
+      "showPastIncidents": "Mostrar incidentes anteriores en la página",
+      "texts": "Textos y enlaces",
+      "footer": "Texto del pie",
+      "supportUrl": "Enlace de soporte",
+      "supportLabel": "Texto del enlace de soporte",
+      "links": "Enlaces del pie",
+      "linkLabel": "Texto",
+      "linkUrl": "Dirección",
+      "removeLink": "Quitar enlace",
+      "addLink": "Agregar enlace",
+      "advanced": "Avanzado",
+      "advancedHint": "El CSS y el HTML se sanitizan al guardar: se eliminan scripts, eventos, @import y direcciones externas. Use /api/public/uploads/<id> para imágenes subidas.",
+      "customCss": "CSS personalizado",
+      "customHeaderHtml": "HTML de la cabecera",
+      "customFooterHtml": "HTML del pie",
+      "preview": "Vista previa",
+      "widths": {
+        "desktop": "Escritorio",
+        "mobile": "Móvil"
+      },
+      "reload": "Recargar",
+      "previewHint": "Colores, fuente y CSS cambian al instante. Imágenes, textos y HTML aparecen tras guardar el borrador."
+    },
+    "domains": {
+      "heading": "Dominios propios",
+      "intro": "Sirva esta página en una dirección propia, como status.empresa.com. Apunte el DNS del dominio a este servidor y demuestre la propiedad con un registro TXT.",
+      "empty": "Ningún dominio registrado.",
+      "verified": "Verificado",
+      "pending": "Pendiente de verificación",
+      "verify": "Verificar",
+      "forceVerify": "Marcar como verificado",
+      "confirmForce": "¿Marcar el dominio como verificado sin comprobar el DNS? Úselo solo para dominios de la red interna que usted controla.",
+      "confirmRemove": "¿Quitar el dominio {hostname}?",
+      "instructions": "Cree este registro en el DNS del dominio y haga clic en Verificar:",
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "dnsHint": "La propagación del DNS puede tardar algunos minutos.",
+      "verificationFailed": "Registro TXT no encontrado (o con otro valor). Revise el DNS e inténtelo de nuevo en unos minutos.",
+      "hostname": "Dominio",
+      "add": "Agregar dominio",
+      "tlsHint": "Con el dominio verificado, el HTTPS se emite automáticamente en el primer acceso (los puertos 80 y 443 deben ser accesibles desde internet)."
     }
+  },
+  "denied": {
+    "title": "Acceso restringido",
+    "ip": "Esta página solo se puede acceder desde las redes autorizadas.",
+    "role": "Su cuenta no tiene acceso a esta página.",
+    "otherAccount": "Entrar con otra cuenta"
   }
 }

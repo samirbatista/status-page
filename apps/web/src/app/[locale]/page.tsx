@@ -3,10 +3,22 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { StatusPageView } from '@/components/public/status-page-view';
 import { Link } from '@/i18n/navigation';
-import { ApiError, serverApi } from '@/lib/server-api';
+import { pageMetadata } from '@/lib/page-metadata';
+import { ApiError, publicApi, serverApi } from '@/lib/server-api';
 import { type PublicSummary } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+
+/** Favicon e título da página padrão (sem bloquear a página se ela for privada). */
+export async function generateMetadata() {
+  try {
+    const { slug } = await serverApi<{ slug: string }>('/public/default');
+    const summary = await serverApi<PublicSummary>(`/public/pages/${encodeURIComponent(slug)}`);
+    return pageMetadata(summary.page);
+  } catch {
+    return {};
+  }
+}
 
 /** Raiz do site: exibe a página definida como padrão. */
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -34,6 +46,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     );
   }
 
-  const summary = await serverApi<PublicSummary>(`/public/pages/${encodeURIComponent(slug)}`);
+  const summary = await publicApi<PublicSummary>(`/public/pages/${encodeURIComponent(slug)}`, {
+    locale,
+    returnTo: '/',
+  });
   return <StatusPageView summary={summary} />;
 }

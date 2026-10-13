@@ -1,5 +1,6 @@
 import { isLocale } from '@status-page/shared';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -24,7 +25,9 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-          <LoginForm />
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </div>
         <LanguageSwitcher />
       </main>

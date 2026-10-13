@@ -2,7 +2,7 @@ import { isLocale } from '@status-page/shared';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { LocalTime } from '@/components/local-time';
-import { PublicShell } from '@/components/public/status-page-view';
+import { ThemedShell } from '@/components/public/themed-shell';
 import { IncidentStatusBadge } from '@/components/status-badge';
 import { Link } from '@/i18n/navigation';
 import { publicApi } from '@/lib/server-api';
@@ -38,6 +38,7 @@ export default async function HistoryPage({
     requested && /^\d{4}-\d{2}$/.test(requested) ? requested : new Date().toISOString().slice(0, 7);
   const data = await publicApi<Data>(
     `/public/pages/${encodeURIComponent(slug)}/history?month=${month}`,
+    { locale, returnTo: `/p/${slug}/history` },
   );
   const t = await getTranslations('history');
   const format = await getFormatter();
@@ -49,11 +50,11 @@ export default async function HistoryPage({
   const current = new Date().toISOString().slice(0, 7);
 
   return (
-    <PublicShell page={data.page}>
+    <ThemedShell page={data.page}>
       <div className="flex items-center justify-between">
         <Link
           href={`/p/${slug}/history?month=${shiftMonth(month, -1)}`}
-          className="text-brand hover:underline"
+          className="text-[var(--link)] hover:underline"
         >
           ← {t('previous')}
         </Link>
@@ -61,7 +62,7 @@ export default async function HistoryPage({
         {month < current ? (
           <Link
             href={`/p/${slug}/history?month=${shiftMonth(month, 1)}`}
-            className="text-brand hover:underline"
+            className="text-[var(--link)] hover:underline"
           >
             {t('next')} →
           </Link>
@@ -121,6 +122,6 @@ export default async function HistoryPage({
           </ul>
         )}
       </section>
-    </PublicShell>
+    </ThemedShell>
   );
 }

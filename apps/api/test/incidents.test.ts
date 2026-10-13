@@ -194,10 +194,12 @@ describe('fluxo de incidentes (critério de pronto da F1)', () => {
     expect(cross.status).toBe(404);
   });
 
-  it('páginas privadas não aparecem na API pública', async () => {
+  it('páginas privadas exigem login na API pública', async () => {
     await owner.patch(`/api/pages/${pageId}`, { visibility: 'private' });
-    expect((await h.anon.get('/api/public/pages/acme')).status).toBe(404);
-    expect((await h.anon.get('/api/public/default')).status).toBe(404);
+    const res = await h.anon.get('/api/public/pages/acme');
+    expect(res.status).toBe(401);
+    expect(res.body.message).toBe('login_required');
+    expect((await owner.get('/api/public/pages/acme')).status).toBe(200);
   });
 
   it('a primeira página criada é a padrão', async () => {
