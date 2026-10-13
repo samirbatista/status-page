@@ -6,9 +6,21 @@ import {
   startOfLocalDay,
   type StatusPoint,
 } from '@status-page/core';
-import { type ComponentStatus, overallStatus } from '@status-page/shared';
+import { type Page } from '@status-page/db';
+import { type ComponentStatus, overallStatus, roleAtLeast } from '@status-page/shared';
+import { assertCanView } from '../access/page-access.js';
+import { type AuthContext, effectiveRole } from '../common/auth.types.js';
 import { PrismaService } from '../infra/prisma.service.js';
 import { PagesService } from '../pages/pages.service.js';
+import { ThemeService } from '../theme/theme.service.js';
+
+/** Quem está pedindo a página: sessão (se houver) e IP de origem. */
+export interface Viewer {
+  auth?: AuthContext;
+  ip?: string | null;
+  /** Pré-visualizar o rascunho do tema (só para Admins da página). */
+  preview?: boolean;
+}
 
 export const UPTIME_DAYS = 90;
 const PAST_INCIDENT_DAYS = 14;
@@ -30,17 +42,19 @@ export class PublicService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pages: PagesService,
+    private readonly themes: ThemeService,
   ) {}
 
+  /** Slug da página padrão. Se for privada, o acesso é checado ao abri-la. */
   async defaultSlug(): Promise<string | null> {
     const id = await this.pages.defaultPageId();
     if (!id) return null;
     const page = await this.prisma.client.page.findUnique({ where: { id } });
-    return page?.visibility === 'public' ? page.slug : null;
+    return page?.slug ?? null;
   }
 
-  async summary(slug: string, now = new Date()) {
-    const page = await this.findPage(slug);
+  async summary(slug: string, viewer: Viewer, now = new Date()) {
+    const page = await this.findPage(slug, viewer);
     const [groups, links, activeIncidents, maintenances, pastIncidents] = await Promise.all([
       this.prisma.client.componentGroup.findMany({
         where: { pageId: page.id },
@@ -92,7 +106,7 @@ export class PublicService {
     }));
 
     return {
-      page: this.publicPage(page),
+      page: await this.publicPage(page, viewer),
       status: overallStatus(components.map((c) => c.status)),
       groups: groups.map((g) => ({ id: g.id, name: g.name, collapsed: g.collapsed })),
       components,
@@ -104,32 +118,32 @@ export class PublicService {
     };
   }
 
-  async incident(slug: string, incidentId: string) {
-    const page = await this.findPage(slug);
+  async incident(slug: string, incidentId: string, viewer: Viewer) {
+    const page = await this.findPage(slug, viewer);
     const incident = await this.prisma.client.incident.findFirst({
       where: { id: incidentId, pageId: page.id },
       select: this.incidentSelect(),
     });
     if (!incident) throw new NotFoundException({ message: 'incident_not_found' });
-    return { page: this.publicPage(page), incident };
+    return { page: await this.publicPage(page, viewer), incident };
   }
 
-  async maintenance(slug: string, maintenanceId: string) {
-    const page = await this.findPage(slug);
+  async maintenance(slug: string, maintenanceId: string, viewer: Viewer) {
+    const page = await this.findPage(slug, viewer);
     const maintenance = await this.prisma.client.maintenance.findFirst({
       where: { id: maintenanceId, pageId: page.id },
       select: this.maintenanceSelect(),
     });
     if (!maintenance) throw new NotFoundException({ message: 'maintenance_not_found' });
-    return { page: this.publicPage(page), maintenance };
+    return { page: await this.publicPage(page, viewer), maintenance };
   }
 
   /** Incidentes e manutenções concluídas de um mês (no fuso da página). */
-  async history(slug: string, month: string) {
+  async history(slug: string, month: string, viewer: Viewer) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
       throw new BadRequestException({ message: 'invalid_month' });
     }
-    const page = await this.findPage(slug);
+    const page = await this.findPage(slug, viewer);
     const from = startOfLocalDay(`${month}-01`, page.timezone);
     const [y, m] = month.split('-').map(Number) as [number, number];
     const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
@@ -147,30 +161,29 @@ export class PublicService {
         select: this.maintenanceSelect(),
       }),
     ]);
-    return { page: this.publicPage(page), month, incidents, maintenances };
+    return { page: await this.publicPage(page, viewer), month, incidents, maintenances };
   }
 
-  private async findPage(slug: string) {
+  /** Busca a página e aplica as regras de acesso (públicas, login e/ou IP). */
+  async findPage(slug: string, viewer: Viewer): Promise<Page> {
     const page = await this.prisma.client.page.findUnique({ where: { slug } });
-    // Páginas privadas ficam invisíveis até a F2 (login de leitor / lista de IPs).
-    if (!page || page.visibility !== 'public')
-      throw new NotFoundException({ message: 'page_not_found' });
+    if (!page) throw new NotFoundException({ message: 'page_not_found' });
+    assertCanView(page, viewer.auth, viewer.ip);
     return page;
   }
 
-  private publicPage(page: {
-    slug: string;
-    name: string;
-    description: string | null;
-    timezone: string;
-    defaultLocale: string;
-  }) {
+  private async publicPage(page: Page, viewer: Viewer) {
+    const role = viewer.auth ? effectiveRole(viewer.auth, page.id) : undefined;
+    const preview = Boolean(viewer.preview && role && roleAtLeast(role, 'admin'));
     return {
       slug: page.slug,
       name: page.name,
       description: page.description,
       timezone: page.timezone,
       defaultLocale: page.defaultLocale,
+      visibility: page.visibility,
+      preview,
+      theme: await this.themes.forDisplay(page.id, preview ? 'draft' : 'published'),
     };
   }
 

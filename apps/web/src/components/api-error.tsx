@@ -22,6 +22,14 @@ const KNOWN = new Set([
   'invalid_timezone',
   'layout_mismatch',
   'component_not_found',
+  'invalid_cidr',
+  'invalid_css',
+  'invalid_upload',
+  'unsupported_file_type',
+  'unsafe_svg',
+  'file_too_large',
+  'upload_in_use',
+  'domain_taken',
 ]);
 
 /** Mostra o erro da API traduzido (códigos conhecidos) ou uma mensagem genérica. */
@@ -45,6 +53,14 @@ export function ApiErrorAlert({ error }: { error: unknown }) {
     if (error.code === 'too_many_requests') {
       return (
         <Alert>{t('too_many_requests', { seconds: Number(error.body?.retryAfter ?? 60) })}</Alert>
+      );
+    }
+    if (error.status === 413) return <Alert>{t('file_too_large')}</Alert>;
+    if (error.code === 'invalid_css' && typeof error.body?.reason === 'string') {
+      return (
+        <Alert>
+          {t('invalid_css')} <code className="text-xs">{error.body.reason}</code>
+        </Alert>
       );
     }
     if (KNOWN.has(error.code)) return <Alert>{t(error.code as 'forbidden')}</Alert>;

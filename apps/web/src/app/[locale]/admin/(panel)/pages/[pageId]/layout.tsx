@@ -21,7 +21,7 @@ export default async function PageLayout({
   const base = `/admin/pages/${pageId}`;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">{page.name}</h1>
@@ -45,6 +45,9 @@ export default async function PageLayout({
         <NavLink href={`${base}/maintenances`}>{t('tabs.maintenances')}</NavLink>
         <NavLink href={`${base}/components`}>{t('tabs.components')}</NavLink>
         <NavLink href={`${base}/templates`}>{t('tabs.templates')}</NavLink>
+        {can(role, 'admin') ? (
+          <NavLink href={`${base}/appearance`}>{t('tabs.appearance')}</NavLink>
+        ) : null}
         {can(role, 'admin') ? <NavLink href={`${base}/team`}>{t('tabs.team')}</NavLink> : null}
         {can(role, 'admin') ? (
           <NavLink href={`${base}/settings`}>{t('tabs.settings')}</NavLink>

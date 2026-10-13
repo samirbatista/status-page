@@ -118,6 +118,7 @@ function NewUserForm() {
   const { run, pending, error } = useAction();
   return (
     <form
+      method="post"
       className="grid gap-4 sm:grid-cols-2"
       onSubmit={async (event) => {
         event.preventDefault();

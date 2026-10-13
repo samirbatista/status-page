@@ -17,6 +17,8 @@ export const apiEnvSchema = baseEnvSchema
     SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(60),
     /** Duração máxima da sessão, mesmo com uso contínuo. */
     SESSION_MAX_HOURS: z.coerce.number().int().positive().default(12),
+    /** Diretório dos arquivos enviados (logos, fontes). Em Docker, um volume. */
+    UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
   });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

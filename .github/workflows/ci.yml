@@ -93,6 +93,16 @@ jobs:
             -d "{\"email\":\"admin@example.com\",\"password\":\"$OWNER_PASSWORD\"}" http://localhost/api/auth/login
           curl -fsS -b cookies.txt http://localhost/api/auth/me | grep '"isOwner":true'
           curl -fsS -o /dev/null -b cookies.txt http://localhost/admin
+          # F2: página em domínio próprio (Host), upload servido pelo Caddy e rota interna bloqueada.
+          api() { curl -fsS -b cookies.txt -H 'X-Requested-With: status-page' -H 'Content-Type: application/json' "$@"; }
+          PAGE=$(api -d '{"slug":"smoke","name":"Smoke Status"}' http://localhost/api/pages | jq -r .id)
+          DOMAIN=$(api -d '{"hostname":"status.smoke.test"}' http://localhost/api/pages/$PAGE/domains | jq -r .id)
+          api -X POST http://localhost/api/pages/$PAGE/domains/$DOMAIN/force-verify > /dev/null
+          curl -fsS -H 'Host: status.smoke.test' http://localhost/ | grep -q 'Smoke Status'
+          printf '\x89PNG\r\n\x1a\n0000' > logo.png
+          UPLOAD=$(curl -fsS -b cookies.txt -H 'X-Requested-With: status-page' -F file=@logo.png http://localhost/api/pages/$PAGE/uploads | jq -r .id)
+          curl -fsS -D - -o /dev/null http://localhost/api/public/uploads/$UPLOAD | grep -i 'content-security-policy:.*sandbox'
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost/api/internal/tls-ask?domain=status.smoke.test')" = 404
       - name: Logs em caso de falha
         if: failure()
         run: docker compose logs --no-color

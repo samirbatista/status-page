@@ -4,15 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { type AuditContext, isValidTimeZone, recordAudit } from '@status-page/core';
+import { type AuditContext, isValidTimeZone, parseCidr, recordAudit } from '@status-page/core';
 import { Prisma } from '@status-page/db';
-import { type PageCreateInput } from '@status-page/shared';
+import { type PageCreateInput, type PrivateAccessMode } from '@status-page/shared';
 import { type AuthContext } from '../common/auth.types.js';
 import { PrismaService } from '../infra/prisma.service.js';
 
 export const DEFAULT_PAGE_SETTING = 'defaultPageId';
 
-type PageUpdateInput = Partial<Omit<PageCreateInput, 'slug'>>;
+type PageUpdateInput = Partial<Omit<PageCreateInput, 'slug'>> & {
+  privateAccess?: PrivateAccessMode;
+  allowedCidrs?: string[];
+};
 
 @Injectable()
 export class PagesService {
@@ -63,6 +66,11 @@ export class PagesService {
 
   async update(pageId: string, input: PageUpdateInput, audit: AuditContext) {
     if (input.timezone) this.assertTimeZone(input.timezone);
+    if (input.allowedCidrs) {
+      const invalid = input.allowedCidrs.filter((c) => !parseCidr(c));
+      if (invalid.length > 0) throw new BadRequestException({ message: 'invalid_cidr', invalid });
+      input = { ...input, allowedCidrs: [...new Set(input.allowedCidrs)] };
+    }
     const before = await this.get(pageId);
     return this.prisma.client.$transaction(async (tx) => {
       const page = await tx.page.update({ where: { id: pageId }, data: input });

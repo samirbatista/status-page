@@ -1,7 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { type PublicIncident, type PublicMaintenance, type PublicSummary } from '@/lib/types';
-import { LanguageSwitcher } from '../language-switcher';
 import { LocalTime } from '../local-time';
 import {
   ComponentStatusBadge,
@@ -10,40 +9,9 @@ import {
   STATUS_BG,
 } from '../status-badge';
 import { cx } from '../ui/ui';
+import { ThemedShell } from './themed-shell';
 import { UptimeBar } from './uptime-bar';
 import { Timeline, useIncidentTimeline, useMaintenanceTimeline } from './updates-timeline';
-
-export function PublicShell({
-  page,
-  children,
-}: {
-  page: { slug: string; name: string; description: string | null };
-  children: React.ReactNode;
-}) {
-  const t = useTranslations('common');
-  return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-10">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Link href={`/p/${page.slug}`} className="text-2xl font-semibold hover:underline">
-            {page.name}
-          </Link>
-          {page.description ? (
-            <p className="text-sm text-[var(--muted)]">{page.description}</p>
-          ) : null}
-        </div>
-        <LanguageSwitcher />
-      </header>
-      {children}
-      <footer className="flex flex-wrap justify-between gap-2 text-sm text-[var(--muted)]">
-        <Link href={`/p/${page.slug}/history`} className="hover:underline">
-          {t('history')}
-        </Link>
-        <span>{t('poweredBy')}</span>
-      </footer>
-    </main>
-  );
-}
 
 export function StatusPageView({ summary }: { summary: PublicSummary }) {
   const t = useTranslations();
@@ -51,7 +19,7 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
   const ungrouped = summary.components.filter((c) => c.groupId === null);
 
   return (
-    <PublicShell page={page}>
+    <ThemedShell page={page}>
       <section
         data-status={summary.status}
         className={cx(
@@ -110,8 +78,8 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
         ) : null}
       </section>
 
-      <PastIncidents summary={summary} />
-    </PublicShell>
+      {page.theme.showPastIncidents ? <PastIncidents summary={summary} /> : null}
+    </ThemedShell>
   );
 }
 

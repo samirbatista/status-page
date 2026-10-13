@@ -13,6 +13,7 @@ export function ChangePasswordForm() {
   const { run, pending, error } = useAction();
   return (
     <form
+      method="post"
       className="flex flex-col gap-4"
       onSubmit={async (event) => {
         event.preventDefault();

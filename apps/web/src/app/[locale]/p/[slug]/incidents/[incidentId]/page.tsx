@@ -3,9 +3,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LocalTime } from '@/components/local-time';
-import { PublicShell } from '@/components/public/status-page-view';
+import { ThemedShell } from '@/components/public/themed-shell';
 import { Timeline, useIncidentTimeline } from '@/components/public/updates-timeline';
 import { IncidentStatusBadge } from '@/components/status-badge';
+import { pageMetadata } from '@/lib/page-metadata';
 import { publicApi } from '@/lib/server-api';
 import { type PublicIncident, type PublicPage } from '@/lib/types';
 
@@ -15,15 +16,16 @@ type Params = Promise<{ locale: string; slug: string; incidentId: string }>;
 type Data = { page: PublicPage; incident: PublicIncident };
 
 async function load(params: Params) {
-  const { slug, incidentId } = await params;
+  const { locale, slug, incidentId } = await params;
   return publicApi<Data>(
     `/public/pages/${encodeURIComponent(slug)}/incidents/${encodeURIComponent(incidentId)}`,
+    { locale, returnTo: `/p/${slug}/incidents/${incidentId}` },
   );
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { page, incident } = await load(params);
-  return { title: `${incident.title} · ${page.name}` };
+  return pageMetadata(page, incident.title);
 }
 
 export default async function IncidentPage({ params }: { params: Params }) {
@@ -33,13 +35,13 @@ export default async function IncidentPage({ params }: { params: Params }) {
   const { page, incident } = await load(params);
   const t = await getTranslations('incident');
   return (
-    <PublicShell page={page}>
+    <ThemedShell page={page}>
       <IncidentDetail
         incident={incident}
         timeZone={page.timezone}
         impactLabel={t(`impact.${incident.impact}`)}
       />
-    </PublicShell>
+    </ThemedShell>
   );
 }
 

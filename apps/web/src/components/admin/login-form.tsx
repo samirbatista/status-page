@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/client-api';
 import { useAction } from '@/lib/use-action';
@@ -10,7 +11,12 @@ import { Button, Field, Input } from '../ui/ui';
 export function LoginForm() {
   const t = useTranslations('admin.login');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { run, pending, error } = useAction();
+  // Volta para a página privada que pediu o login (só caminhos locais).
+  const next = searchParams.get('next');
+  const safeNext =
+    next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : null;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,11 +29,14 @@ export function LoginForm() {
         }),
       { refresh: false },
     );
-    if (ok) router.replace('/admin');
+    if (!ok) return;
+    if (safeNext) window.location.assign(safeNext);
+    else router.replace('/admin');
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    // method="post": se enviado antes de o JavaScript carregar, a senha não vai para a URL.
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       <Field label={t('email')}>
         <Input name="email" type="email" autoComplete="username" required autoFocus />
       </Field>

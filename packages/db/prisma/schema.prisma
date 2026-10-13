@@ -1,5 +1,6 @@
 // F0: identidade, páginas, componentes, auditoria e configurações.
 // F1: incidentes, manutenções e templates de incidente.
+// F2: tema visual, uploads, domínios próprios e páginas privadas.
 // Notificações e monitoramento entram nas fases seguintes.
 
 generator client {
@@ -49,6 +50,24 @@ enum PageVisibility {
   private
 }
 
+/// Como uma página privada é liberada.
+enum PrivateAccessMode {
+  login
+  ip
+  login_or_ip
+  login_and_ip
+}
+
+enum ThemeKind {
+  draft
+  published
+}
+
+enum UploadKind {
+  image
+  font
+}
+
 enum Role {
   viewer
   operator
@@ -66,15 +85,19 @@ enum IdentityProvider {
 // ---------------------------------------------------------------------------
 
 model Page {
-  id            String         @id @default(uuid(7)) @db.Uuid
-  slug          String         @unique
+  id            String            @id @default(uuid(7)) @db.Uuid
+  slug          String            @unique
   name          String
   description   String?
-  defaultLocale String         @default("pt-BR") @map("default_locale")
-  timezone      String         @default("America/Sao_Paulo")
-  visibility    PageVisibility @default(public)
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  defaultLocale String            @default("pt-BR") @map("default_locale")
+  timezone      String            @default("America/Sao_Paulo")
+  visibility    PageVisibility    @default(public)
+  /// Regras de acesso quando `visibility = private`.
+  privateAccess PrivateAccessMode @default(login) @map("private_access")
+  /// Redes liberadas (CIDR), usadas pelos modos com IP.
+  allowedCidrs  String[]          @default([]) @map("allowed_cidrs")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   domains      PageDomain[]
   components   PageComponent[]
@@ -83,16 +106,20 @@ model Page {
   incidents    Incident[]
   maintenances Maintenance[]
   templates    IncidentTemplate[]
+  themes       PageTheme[]
+  uploads      Upload[]
 
   @@map("pages")
 }
 
 model PageDomain {
-  id         String    @id @default(uuid(7)) @db.Uuid
-  pageId     String    @map("page_id") @db.Uuid
-  hostname   String    @unique
-  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(3)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                String    @id @default(uuid(7)) @db.Uuid
+  pageId            String    @map("page_id") @db.Uuid
+  hostname          String    @unique
+  /// Valor esperado no registro TXT `_status-page.<hostname>`.
+  verificationToken String    @map("verification_token")
+  verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
@@ -163,6 +190,40 @@ model ComponentStatusHistory {
 
   @@index([componentId, changedAt])
   @@map("component_status_history")
+}
+
+/// Identidade visual da página: um registro de rascunho e um publicado.
+model PageTheme {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  pageId      String    @map("page_id") @db.Uuid
+  kind        ThemeKind
+  /// Conteúdo validado pelo `themeSchema` (CSS e HTML já sanitizados).
+  data        Json
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, kind])
+  @@map("page_themes")
+}
+
+/// Arquivo enviado (logo, favicon, fonte). O conteúdo fica no disco, em UPLOAD_DIR/<id>.
+model Upload {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  pageId      String     @map("page_id") @db.Uuid
+  kind        UploadKind
+  filename    String
+  contentType String     @map("content_type")
+  size        Int
+  sha256      String
+  createdById String?    @map("created_by_id") @db.Uuid
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@map("uploads")
 }
 
 // ---------------------------------------------------------------------------

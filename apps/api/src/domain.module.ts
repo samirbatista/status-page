@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuditController } from './audit/audit.controller.js';
 import { AuditService } from './audit/audit.service.js';
+import { DomainsController } from './domains/domains.controller.js';
+import { DomainsService } from './domains/domains.service.js';
+import { ThemeController } from './theme/theme.controller.js';
+import { ThemeService } from './theme/theme.service.js';
+import { UploadsController } from './uploads/uploads.controller.js';
+import { UploadsService } from './uploads/uploads.service.js';
 import { ComponentsController } from './components/components.controller.js';
 import { ComponentsService } from './components/components.service.js';
 import { IncidentsController } from './incidents/incidents.controller.js';
@@ -20,21 +26,27 @@ import { UsersService } from './users/users.service.js';
   controllers: [
     AuditController,
     ComponentsController,
+    DomainsController,
     IncidentsController,
     MaintenancesController,
     PagesController,
     PublicController,
     TemplatesController,
+    ThemeController,
+    UploadsController,
     UsersController,
   ],
   providers: [
     AuditService,
     ComponentsService,
+    DomainsService,
     IncidentsService,
     MaintenancesService,
     PagesService,
     PublicService,
     TemplatesService,
+    ThemeService,
+    UploadsService,
     UsersService,
   ],
 })

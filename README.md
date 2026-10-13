@@ -5,10 +5,10 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
-> **Estado atual: F1 (núcleo).** Página pública com componentes, incidentes, manutenções e
-> barra de disponibilidade de 90 dias; painel administrativo com login local, papéis e
-> auditoria. Personalização visual, LDAP/MFA, notificações e monitoramento chegam nas
-> próximas fases.
+> **Estado atual: F2 (personalização e acesso).** Página pública com componentes,
+> incidentes, manutenções e barra de 90 dias; painel com login local, papéis e auditoria;
+> identidade visual por página, domínios próprios com HTTPS automático e páginas privadas.
+> LDAP/MFA, notificações e monitoramento chegam nas próximas fases.
 
 ## O que já funciona
 
@@ -22,6 +22,16 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
   - manutenções com início e fim automáticos no horário (ou manuais);
   - equipe por página com papéis Leitor, Operador e Admin; usuários e Donos;
   - log de auditoria com filtros e exportação CSV; sessões ativas e troca de senha.
+- **Aparência por página** (Painel → Aparência): logo (claro e escuro), favicon, imagem de
+  cabeçalho e de compartilhamento, paletas clara e escura, cores dos status, tema
+  claro/escuro/automático, fonte (sistema, Google Fonts ou arquivo próprio), estilo do
+  cabeçalho, textos e links do rodapé, CSS e HTML personalizados. Rascunho com
+  pré-visualização ao vivo e publicação.
+- **Domínios próprios** (Painel → Configurações): cada página pode ter seus domínios,
+  verificados por registro DNS TXT (ou manualmente pelo Dono, para redes internas). Domínios
+  verificados recebem HTTPS automático no primeiro acesso.
+- **Páginas privadas**: acesso por login (usuários com papel na página), por redes liberadas
+  (CIDR) ou pela combinação das duas.
 - **Segurança de login**: senhas com argon2id, política de senha, bloqueio progressivo após
   5 falhas (por conta e por IP), limite de requisições, cookie `HttpOnly`/`SameSite` e
   proteção CSRF por cabeçalho.
@@ -47,6 +57,18 @@ docker compose up -d --build --wait
 
 A página fica em `http://<servidor>/`. Para HTTPS automático, defina `SITE_ADDRESS` com o
 domínio público no `.env` (as portas 80 e 443 precisam estar acessíveis).
+
+Arquivos enviados (logos, fontes) ficam no volume `uploads-data` da API.
+
+### Domínios próprios
+
+1. Aponte o DNS do domínio (registro A/AAAA ou CNAME) para o servidor.
+2. Em Painel → Configurações da página, adicione o domínio e crie o registro TXT indicado.
+3. Clique em **Verificar**. A partir daí o Caddy emite o certificado no primeiro acesso
+   (`on_demand_tls`, liberado apenas para domínios verificados).
+
+Em redes internas sem DNS público, o Dono pode marcar o domínio como verificado; com
+`SITE_ADDRESS` vazio, os domínios também são atendidos por HTTP na porta 80.
 
 O serviço `migrate` aplica as migrações do banco e cria a conta Dono a cada start; ambos
 são idempotentes. Entre em `http://<servidor>/admin` com `SEED_OWNER_EMAIL` e

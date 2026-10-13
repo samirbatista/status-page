@@ -16,6 +16,7 @@ import { type AuthContext } from '../common/auth.types.js';
 import { RequireOwner, RequirePageRole } from '../common/decorators.js';
 import { Audit, CurrentAuth } from '../common/request-meta.js';
 import { ZodPipe } from '../common/zod.pipe.js';
+import { type z } from 'zod';
 import { PagesService } from './pages.service.js';
 
 @Controller('pages')
@@ -43,7 +44,7 @@ export class PagesController {
   @RequirePageRole('admin')
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(pageUpdateSchema)) body: Partial<PageCreateInput>,
+    @Body(new ZodPipe(pageUpdateSchema)) body: z.infer<typeof pageUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.pages.update(pageId, body, audit);

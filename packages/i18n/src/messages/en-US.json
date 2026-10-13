@@ -3,7 +3,8 @@
     "appName": "Status Page",
     "language": "Language",
     "poweredBy": "Powered by Status Page",
-    "history": "Incident history"
+    "history": "Incident history",
+    "support": "Support"
   },
   "status": {
     "label": "Status",
@@ -99,7 +100,15 @@
     "invalid_window": "The end must be after the start.",
     "invalid_timezone": "Invalid time zone.",
     "layout_mismatch": "The page changed while you were editing. Reload and try again.",
-    "component_not_found": "Component not found on this page."
+    "component_not_found": "Component not found on this page.",
+    "invalid_cidr": "Some networks are in an invalid format. Use CIDR notation, e.g. 10.0.0.0/8.",
+    "invalid_css": "The CSS has a syntax error.",
+    "invalid_upload": "Invalid file for this field.",
+    "unsupported_file_type": "Unsupported file format.",
+    "unsafe_svg": "The SVG contains scripts or external references and was rejected.",
+    "file_too_large": "The file exceeds the 2 MB limit.",
+    "upload_in_use": "The file is in use by the theme.",
+    "domain_taken": "This domain is already registered."
   },
   "admin": {
     "title": "Admin",
@@ -144,7 +153,8 @@
         "components": "Components",
         "templates": "Templates",
         "team": "Team",
-        "settings": "Settings"
+        "settings": "Settings",
+        "appearance": "Appearance"
       }
     },
     "overview": {
@@ -285,7 +295,17 @@
       "isDefault": "This page is shown at the site root.",
       "makeDefault": "Show at the site root",
       "confirmDelete": "This deletes the page, its incidents and maintenance. Type \"{slug}\" to confirm.",
-      "delete": "Delete page"
+      "delete": "Delete page",
+      "privateAccess": "Private page access",
+      "accessMode": "Who can view",
+      "accessModes": {
+        "login": "Users with a role on the page (sign-in)",
+        "ip": "Anyone on the allowed networks",
+        "login_or_ip": "Sign-in OR allowed network",
+        "login_and_ip": "Sign-in AND allowed network"
+      },
+      "allowedCidrs": "Allowed networks",
+      "allowedCidrsHint": "One address or network per line, in CIDR notation (e.g. 10.0.0.0/8, 2001:db8::/32)."
     },
     "audit": {
       "heading": "Audit log",
@@ -318,6 +338,120 @@
       "lastActive": "Last activity",
       "revoke": "End",
       "noLocalPassword": "Your account does not use a local password."
+    },
+    "appearance": {
+      "none": "None",
+      "uploading": "Uploading…",
+      "upload": "Upload file",
+      "saveDraft": "Save draft",
+      "publish": "Publish",
+      "discard": "Discard draft",
+      "unsaved": "Unsaved changes",
+      "draftSaved": "Draft saved, not published yet",
+      "upToDate": "Published",
+      "published": "Theme published.",
+      "confirmDiscard": "Discard the draft and go back to the published theme?",
+      "cssRemoved": "Parts of the CSS were removed for security:",
+      "identity": "Identity",
+      "images": {
+        "logoId": "Logo",
+        "logoDarkId": "Logo for dark theme",
+        "faviconId": "Favicon",
+        "headerImageId": "Header image",
+        "ogImageId": "Sharing image"
+      },
+      "imageHints": {
+        "logoId": "PNG, SVG or WebP with a transparent background. Up to 2 MB.",
+        "logoDarkId": "Optional: used when the visitor is in dark mode.",
+        "faviconId": "Browser tab icon (ICO, PNG or SVG).",
+        "headerImageId": "Header background for the \"Image banner\" style.",
+        "ogImageId": "Shown when the link is shared (1200×630 recommended)."
+      },
+      "colors": "Colors",
+      "mode": "Theme",
+      "modes": {
+        "light": "Light",
+        "dark": "Dark",
+        "auto": "Automatic (follows the system)"
+      },
+      "lightPalette": "Light palette",
+      "darkPalette": "Dark palette",
+      "palette": {
+        "brand": "Brand color",
+        "background": "Background",
+        "surface": "Cards",
+        "text": "Text",
+        "muted": "Secondary text",
+        "border": "Borders",
+        "link": "Links"
+      },
+      "statusColors": "Status colors",
+      "typography": "Typography",
+      "fontSource": "Font",
+      "fonts": {
+        "system": "System font",
+        "google": "Google Fonts",
+        "upload": "Own file"
+      },
+      "fontFamily": "Family name",
+      "googleHint": "Exactly as on Google Fonts, e.g. Inter, Open Sans.",
+      "uploadFontHint": "Name used for the uploaded font.",
+      "fontFile": "Font file (WOFF2, WOFF, TTF or OTF)",
+      "layout": "Layout",
+      "header": "Header style",
+      "headers": {
+        "simple": "Simple (logo on the left)",
+        "centered": "Centered",
+        "banner": "Image banner"
+      },
+      "showPastIncidents": "Show past incidents on the page",
+      "texts": "Texts and links",
+      "footer": "Footer text",
+      "supportUrl": "Support link",
+      "supportLabel": "Support link text",
+      "links": "Footer links",
+      "linkLabel": "Text",
+      "linkUrl": "Address",
+      "removeLink": "Remove link",
+      "addLink": "Add link",
+      "advanced": "Advanced",
+      "advancedHint": "CSS and HTML are sanitized when saved: scripts, events, @import and external addresses are removed. Use /api/public/uploads/<id> for uploaded images.",
+      "customCss": "Custom CSS",
+      "customHeaderHtml": "Header HTML",
+      "customFooterHtml": "Footer HTML",
+      "preview": "Preview",
+      "widths": {
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
+      "reload": "Reload",
+      "previewHint": "Colors, font and CSS update instantly. Images, texts and HTML show up after saving the draft."
+    },
+    "domains": {
+      "heading": "Custom domains",
+      "intro": "Serve this page on your own address, such as status.company.com. Point the domain DNS to this server and prove ownership with a TXT record.",
+      "empty": "No domains yet.",
+      "verified": "Verified",
+      "pending": "Waiting for verification",
+      "verify": "Verify",
+      "forceVerify": "Mark as verified",
+      "confirmForce": "Mark the domain as verified without checking DNS? Only use this for internal-network domains you control.",
+      "confirmRemove": "Remove the domain {hostname}?",
+      "instructions": "Create this record in the domain DNS and click Verify:",
+      "type": "Type",
+      "name": "Name",
+      "value": "Value",
+      "dnsHint": "DNS propagation may take a few minutes.",
+      "verificationFailed": "TXT record not found (or with a different value). Check the DNS and try again in a few minutes.",
+      "hostname": "Domain",
+      "add": "Add domain",
+      "tlsHint": "Once the domain is verified, HTTPS is issued automatically on the first visit (ports 80 and 443 must be reachable from the internet)."
     }
+  },
+  "denied": {
+    "title": "Restricted access",
+    "ip": "This page can only be accessed from authorized networks.",
+    "role": "Your account does not have access to this page.",
+    "otherAccount": "Sign in with another account"
   }
 }

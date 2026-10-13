@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { type ApiEnv, loadApiEnv } from '../../src/env.js';
 
 /** Banco separado para os testes: a suíte apaga todos os dados a cada arquivo. */
@@ -12,6 +14,7 @@ export function testEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): ApiEnv {
     DATABASE_URL: testDatabaseUrl(),
     REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/15',
     APP_SECRET: Buffer.alloc(32).toString('base64'),
+    UPLOAD_DIR: join(tmpdir(), 'status-page-test-uploads'),
     ...overrides,
   });
 }

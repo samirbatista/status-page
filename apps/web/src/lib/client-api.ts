@@ -32,3 +32,21 @@ export async function api<T = unknown>(
   }
   return body as T;
 }
+
+/** Envio de arquivo (multipart) para os uploads da página. */
+export async function uploadFile<T = unknown>(pageId: string, file: File): Promise<T> {
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch(`/api/pages/${pageId}/uploads`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-Requested-With': 'status-page' },
+    body,
+  });
+  const json = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!res.ok) {
+    const code = typeof json?.message === 'string' ? json.message : 'unknown';
+    throw new ClientApiError(res.status, code, json);
+  }
+  return json as T;
+}
