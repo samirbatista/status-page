@@ -1,0 +1,24 @@
+{
+	# Domínios personalizados com TLS on-demand chegam na F2.
+	admin off
+}
+
+# SITE_ADDRESS omitido = HTTP na porta 80 (rede interna); o compose.yaml usa :80 quando vazio.
+# Com um domínio (ex.: status.empresa.com.br) o Caddy emite o certificado automaticamente.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

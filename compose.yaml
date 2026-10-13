@@ -1,0 +1,177 @@
+# Stack completa para produção on-premise.
+#   cp .env.example .env   # e preencha os valores
+#   docker compose up -d --build
+name: status-page
+
+x-node-healthcheck: &node-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 20s
+
+x-backend-env: &backend-env
+  NODE_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DATABASE_URL: postgresql://status:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/status
+  REDIS_URL: redis://redis:6379
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: status
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: status
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U status -d status']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Executa as migrações e o seed (idempotente) e termina.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: migrate
+    image: status-page/migrate:${IMAGE_TAG:-latest}
+    environment:
+      <<: *backend-env
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:?defina SEED_OWNER_EMAIL no .env}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:?defina SEED_OWNER_PASSWORD no .env}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-Administrador}
+      SEED_DEMO_PAGE: ${SEED_DEMO_PAGE:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: node-app
+      args:
+        PACKAGE: '@status-page/api'
+    image: status-page/api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env (openssl rand -base64 32)}
+    healthcheck:
+      <<: *node-healthcheck
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/readyz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: node-app
+      args:
+        PACKAGE: '@status-page/worker'
+    image: status-page/worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    healthcheck:
+      <<: *node-healthcheck
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3002/readyz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: node-app
+      args:
+        PACKAGE: '@status-page/monitor'
+    image: status-page/monitor:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # Necessário para as checagens ICMP (ping) da F5.
+    cap_add:
+      - NET_RAW
+    environment:
+      <<: *backend-env
+    healthcheck:
+      <<: *node-healthcheck
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3003/readyz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: web
+    image: status-page/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    healthcheck:
+      <<: *node-healthcheck
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

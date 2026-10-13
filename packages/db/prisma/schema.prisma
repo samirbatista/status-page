@@ -1,0 +1,256 @@
+// Schema inicial (F0): identidade, páginas, componentes, auditoria e configurações.
+// Incidentes, manutenções, notificações e monitoramento entram nas fases seguintes.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ComponentStatus {
+  operational
+  under_maintenance
+  degraded_performance
+  partial_outage
+  major_outage
+}
+
+enum PageVisibility {
+  public
+  private
+}
+
+enum Role {
+  viewer
+  operator
+  admin
+  owner
+}
+
+enum IdentityProvider {
+  local
+  ldap
+}
+
+// ---------------------------------------------------------------------------
+// Páginas e componentes
+// ---------------------------------------------------------------------------
+
+model Page {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  slug          String         @unique
+  name          String
+  description   String?
+  defaultLocale String         @default("pt-BR") @map("default_locale")
+  timezone      String         @default("America/Sao_Paulo")
+  visibility    PageVisibility @default(public)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains    PageDomain[]
+  components PageComponent[]
+  groups     ComponentGroup[]
+  roles      UserPageRole[]
+
+  @@map("pages")
+}
+
+model PageDomain {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  pageId     String    @map("page_id") @db.Uuid
+  hostname   String    @unique
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@map("page_domains")
+}
+
+model ComponentGroup {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  pageId    String   @map("page_id") @db.Uuid
+  name      String
+  position  Int      @default(0)
+  collapsed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page       Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  components PageComponent[]
+
+  @@index([pageId, position])
+  @@map("component_groups")
+}
+
+/// Um componente existe uma única vez e pode ser exibido em várias páginas (PageComponent).
+model Component {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  name        String
+  description String?
+  status      ComponentStatus @default(operational)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  pages   PageComponent[]
+  history ComponentStatusHistory[]
+
+  @@map("components")
+}
+
+model PageComponent {
+  pageId      String  @map("page_id") @db.Uuid
+  componentId String  @map("component_id") @db.Uuid
+  groupId     String? @map("group_id") @db.Uuid
+  position    Int     @default(0)
+  showUptime  Boolean @default(true) @map("show_uptime")
+
+  page      Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  component Component       @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  group     ComponentGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@id([pageId, componentId])
+  @@index([componentId])
+  @@index([groupId])
+  @@map("page_components")
+}
+
+/// Registro de cada mudança de status; base para o cálculo de uptime.
+model ComponentStatusHistory {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  componentId String          @map("component_id") @db.Uuid
+  status      ComponentStatus
+  changedAt   DateTime        @default(now()) @map("changed_at") @db.Timestamptz(3)
+  changedById String?         @map("changed_by_id") @db.Uuid
+
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  changedBy User?     @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([componentId, changedAt])
+  @@map("component_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// Identidade e acesso
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  email        String    @unique
+  name         String
+  isOwner      Boolean   @default(false) @map("is_owner")
+  /// Conta de emergência: login local sempre permitido, mesmo com LDAP fora do ar.
+  isBreakGlass Boolean   @default(false) @map("is_break_glass")
+  disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(3)
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  identities    UserIdentity[]
+  pageRoles     UserPageRole[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  statusChanges ComponentStatusHistory[]
+
+  @@map("users")
+}
+
+/// Forma de autenticação do usuário. Local guarda o hash argon2id; LDAP guarda o DN.
+model UserIdentity {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  userId       String           @map("user_id") @db.Uuid
+  provider     IdentityProvider
+  /// Para `local`: o e-mail normalizado. Para `ldap`: `<providerId>:<objectGUID ou DN>`.
+  subject      String
+  passwordHash String?          @map("password_hash")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+  @@map("user_identities")
+}
+
+model UserPageRole {
+  userId    String   @map("user_id") @db.Uuid
+  pageId    String   @map("page_id") @db.Uuid
+  role      Role
+  /// Papel definido manualmente prevalece sobre o mapeado por grupo LDAP.
+  manual    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pageId])
+  @@index([pageId])
+  @@map("user_page_roles")
+}
+
+model Session {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  /// Hash SHA-256 do token entregue no cookie; o token em si nunca é armazenado.
+  tokenHash    String    @unique @map("token_hash")
+  ip           String?
+  userAgent    String?   @map("user_agent")
+  mfaVerified  Boolean   @default(false) @map("mfa_verified")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastActiveAt DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(3)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Sistema
+// ---------------------------------------------------------------------------
+
+/// Log de auditoria somente de inclusão.
+model AuditLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  pageId     String?  @map("page_id") @db.Uuid
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([pageId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Configurações globais chave/valor. Valores sensíveis são gravados cifrados.
+model Setting {
+  key       String   @id
+  value     Json
+  encrypted Boolean  @default(false)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("settings")
+}

@@ -1,0 +1,32 @@
+{
+  "common": {
+    "appName": "Status Page",
+    "language": "Language",
+    "poweredBy": "Powered by Status Page"
+  },
+  "status": {
+    "operational": "Operational",
+    "under_maintenance": "Under maintenance",
+    "degraded_performance": "Degraded performance",
+    "partial_outage": "Partial outage",
+    "major_outage": "Major outage"
+  },
+  "overall": {
+    "operational": "All systems operational",
+    "under_maintenance": "Maintenance in progress",
+    "degraded_performance": "Some systems have degraded performance",
+    "partial_outage": "Partial outage on some systems",
+    "major_outage": "Major outage on some systems"
+  },
+  "incident": {
+    "investigating": "Investigating",
+    "identified": "Identified",
+    "monitoring": "Monitoring",
+    "resolved": "Resolved"
+  },
+  "home": {
+    "components": "Components",
+    "noComponents": "No components registered yet.",
+    "pastIncidents": "Past incidents"
+  }
+}

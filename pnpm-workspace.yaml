@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - '@swc/core'
+  - argon2
+  - esbuild
+  - prisma
+  - sharp
+
+# Aceleradores nativos opcionais; os pacotes funcionam sem eles.
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - msgpackr-extract

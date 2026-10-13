@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, testes e build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: status
+          POSTGRES_PASSWORD: status
+          POSTGRES_DB: status
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U status -d status"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://status:status@localhost:5432/status
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Formatação
+        run: pnpm format:check
+      - name: Migrações aplicam e batem com o schema
+        run: |
+          pnpm db:deploy
+          pnpm --filter @status-page/db migrate:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  docker:
+    name: Imagens Docker e smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Gera .env de teste
+        run: |
+          cat > .env <<EOF
+          POSTGRES_PASSWORD=$(openssl rand -hex 24)
+          APP_SECRET=$(openssl rand -base64 32)
+          SEED_OWNER_EMAIL=admin@example.com
+          SEED_OWNER_PASSWORD=$(openssl rand -hex 16)
+          SEED_DEMO_PAGE=true
+          EOF
+      - name: Build
+        run: docker compose build
+      - name: Sobe a stack
+        run: docker compose up -d --wait --wait-timeout 180
+      - name: Smoke test
+        run: |
+          set -eux
+          curl -fsS http://localhost/api/healthz
+          curl -fsS http://localhost/api/readyz | grep '"status":"ok"'
+          curl -fsS http://localhost/healthz
+          curl -fsS http://localhost/ | grep 'Todos os sistemas operacionais'
+          curl -fsS http://localhost/en-US | grep 'All systems operational'
+          curl -fsS http://localhost/es | grep 'Todos los sistemas operativos'
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Derruba a stack
+        if: always()
+        run: docker compose down -v
