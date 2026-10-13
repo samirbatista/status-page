@@ -44,6 +44,20 @@ export default async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const prefix = LOCALE_PREFIX.exec(pathname)?.[0] ?? '';
     const rest = pathname.slice(prefix.length) || '/';
+
+    // O endereço canônico no domínio próprio não tem `/p/<slug>`: links internos
+    // e o retorno do login (`/p/<slug>/...`) são redirecionados para o caminho limpo.
+    const own = `/p/${slug}`;
+    if (rest === own || rest.startsWith(`${own}/`)) {
+      const clean = `${prefix}${rest.slice(own.length)}` || '/';
+      const proto =
+        request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() ??
+        request.nextUrl.protocol.replace(':', '');
+      return NextResponse.redirect(
+        new URL(`${clean}${request.nextUrl.search}`, `${proto}://${host}`),
+      );
+    }
+
     if (!PASSTHROUGH.test(rest)) {
       const url = request.nextUrl.clone();
       url.pathname = `${prefix}/p/${slug}${rest === '/' ? '' : rest}`;
