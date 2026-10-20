@@ -19,7 +19,14 @@
     },
     "test": {
       "dependsOn": ["^build", "generate"],
-      "env": ["DATABASE_URL", "REDIS_URL", "TEST_DATABASE_URL", "TEST_REDIS_URL"]
+      "env": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "TEST_DATABASE_URL",
+        "TEST_REDIS_URL",
+        "TEST_OPENLDAP",
+        "TEST_SAMBA_AD"
+      ]
     },
     "dev": {
       "dependsOn": ["^build", "generate"],

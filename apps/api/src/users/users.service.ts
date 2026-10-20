@@ -1,14 +1,19 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { type AuditContext, recordAudit } from '@status-page/core';
 import { type Db } from '@status-page/core';
+import { type Prisma } from '@status-page/db';
 import { type Role } from '@status-page/shared';
+import { AuthSettingsService } from '../auth/auth-settings.service.js';
+import { MfaService } from '../auth/mfa.service.js';
 import { PasswordService } from '../auth/password.service.js';
 import { SessionService } from '../auth/session.service.js';
+import { type AuthContext } from '../common/auth.types.js';
 import { PrismaService } from '../infra/prisma.service.js';
 
 const USER_SELECT = {
@@ -20,9 +25,27 @@ const USER_SELECT = {
   disabledAt: true,
   lastLoginAt: true,
   createdAt: true,
-  identities: { select: { provider: true } },
-  pageRoles: { select: { pageId: true, role: true } },
+  identities: {
+    select: {
+      provider: true,
+      username: true,
+      disabledAt: true,
+      lastSyncAt: true,
+      ldapProvider: { select: { name: true } },
+    },
+  },
+  pageRoles: { select: { pageId: true, role: true, manual: true } },
+  totp: { select: { confirmedAt: true } },
+  _count: { select: { webauthn: true } },
 } as const;
+
+type UserRow = Prisma.UserGetPayload<{ select: typeof USER_SELECT }>;
+
+/** Formato da API: o estado do MFA no lugar dos detalhes internos. */
+function present(user: UserRow) {
+  const { totp, _count, ...rest } = user;
+  return { ...rest, mfa: { totp: Boolean(totp?.confirmedAt), webauthn: _count.webauthn } };
+}
 
 @Injectable()
 export class UsersService {
@@ -30,10 +53,16 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionService,
+    private readonly settings: AuthSettingsService,
+    private readonly mfa: MfaService,
   ) {}
 
-  list() {
-    return this.prisma.client.user.findMany({ orderBy: { name: 'asc' }, select: USER_SELECT });
+  async list() {
+    const users = await this.prisma.client.user.findMany({
+      orderBy: { name: 'asc' },
+      select: USER_SELECT,
+    });
+    return users.map(present);
   }
 
   async create(
@@ -62,16 +91,27 @@ export class UsersService {
         entityId: user.id,
         after: { email: user.email, name: user.name, isOwner: user.isOwner },
       });
-      return user;
+      return present(user);
     });
   }
 
   async update(
     userId: string,
-    input: { name?: string; isOwner?: boolean; disabled?: boolean },
+    input: { name?: string; isOwner?: boolean; disabled?: boolean; breakGlass?: boolean },
     audit: AuditContext,
   ) {
     const before = await this.find(userId);
+    if (input.breakGlass) {
+      // Conta de emergência: Dono com senha local, que não depende do diretório.
+      const owner = input.isOwner ?? before.isOwner;
+      const local = await this.prisma.client.userIdentity.count({
+        where: { userId, provider: 'local', passwordHash: { not: null } },
+      });
+      if (!owner || local === 0) throw new BadRequestException({ message: 'break_glass_invalid' });
+    }
+    const losesBreakGlass =
+      before.isBreakGlass && (input.breakGlass === false || input.isOwner === false);
+    if (losesBreakGlass) await this.assertBreakGlassRemains(userId);
     const losesOwner =
       before.isOwner &&
       (input.isOwner === false || (input.disabled === true && !before.disabledAt));
@@ -82,7 +122,10 @@ export class UsersService {
         where: { id: userId },
         data: {
           ...(input.name !== undefined ? { name: input.name } : {}),
-          ...(input.isOwner !== undefined ? { isOwner: input.isOwner } : {}),
+          ...(input.isOwner !== undefined ? { isOwner: input.isOwner, ownerViaLdap: false } : {}),
+          ...(input.breakGlass !== undefined ? { isBreakGlass: input.breakGlass } : {}),
+          // Sem papel de Dono não há conta de emergência.
+          ...(input.isOwner === false ? { isBreakGlass: false } : {}),
           ...(input.disabled !== undefined
             ? { disabledAt: input.disabled ? (before.disabledAt ?? new Date()) : null }
             : {}),
@@ -97,15 +140,17 @@ export class UsersService {
         before: {
           name: before.name,
           isOwner: before.isOwner,
+          breakGlass: before.isBreakGlass,
           disabled: Boolean(before.disabledAt),
         },
         after: {
           name: updated.name,
           isOwner: updated.isOwner,
+          breakGlass: updated.isBreakGlass,
           disabled: Boolean(updated.disabledAt),
         },
       });
-      return updated;
+      return present(updated);
     });
     if (input.disabled) await this.sessions.revokeAll(userId);
     return user;
@@ -141,10 +186,27 @@ export class UsersService {
   async team(pageId: string) {
     const roles = await this.prisma.client.userPageRole.findMany({
       where: { pageId },
-      include: { user: { select: { id: true, email: true, name: true, disabledAt: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            disabledAt: true,
+            isOwner: true,
+            totp: { select: { confirmedAt: true } },
+            _count: { select: { webauthn: true } },
+          },
+        },
+      },
       orderBy: { user: { name: 'asc' } },
     });
-    return roles.map((r) => ({ ...r.user, role: r.role, manual: r.manual }));
+    return roles.map(({ user: { totp, _count, ...user }, role, manual }) => ({
+      ...user,
+      role,
+      manual,
+      mfa: Boolean(totp?.confirmedAt) || _count.webauthn > 0,
+    }));
   }
 
   /** Usuários que podem ser adicionados à equipe (busca por nome ou e-mail). */
@@ -208,6 +270,41 @@ export class UsersService {
     const user = await this.prisma.client.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException({ message: 'user_not_found' });
     return user;
+  }
+
+  /**
+   * Com o login local restrito às contas de emergência, a última delas não pode
+   * deixar de ser: seria trancar todos do lado de fora se o diretório cair.
+   */
+  private async assertBreakGlassRemains(userId: string): Promise<void> {
+    const settings = await this.settings.get();
+    if (settings.localLogin !== 'break_glass_only') return;
+    const others = await this.prisma.client.user.count({
+      where: { isBreakGlass: true, isOwner: true, disabledAt: null, id: { not: userId } },
+    });
+    if (others === 0) throw new BadRequestException({ message: 'last_break_glass' });
+  }
+
+  // --- MFA ------------------------------------------------------------------
+
+  /**
+   * Redefine o MFA. O Dono redefine o de qualquer usuário; o Admin, o de quem
+   * faz parte da equipe de uma página que ele administra (exceto Donos).
+   */
+  async resetMfa(actor: AuthContext, userId: string, audit: AuditContext): Promise<void> {
+    const target = await this.prisma.client.user.findUnique({
+      where: { id: userId },
+      include: { pageRoles: { select: { pageId: true } } },
+    });
+    if (!target) throw new NotFoundException({ message: 'user_not_found' });
+    if (!actor.user.isOwner) {
+      const adminPages = new Set(
+        [...actor.pageRoles].filter(([, role]) => role === 'admin').map(([pageId]) => pageId),
+      );
+      const shares = target.pageRoles.some((r) => adminPages.has(r.pageId));
+      if (target.isOwner || !shares) throw new ForbiddenException({ message: 'forbidden' });
+    }
+    await this.mfa.reset(userId, audit);
   }
 
   private async assertNotLastOwner(db: Db, userId: string): Promise<void> {

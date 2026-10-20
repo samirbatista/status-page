@@ -47,6 +47,9 @@ export function TeamManager({ pageId, team }: { pageId: string; team: TeamMember
                   <p className="text-sm text-[var(--muted)]">
                     {member.email}
                     {member.disabledAt ? ` · ${t('users.disabled')}` : null}
+                    {!member.manual ? ` · ${t('users.viaGroup')}` : null}
+                    {' · '}
+                    {member.mfa ? t('users.mfaOn') : t('users.mfaOff')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -70,6 +73,18 @@ export function TeamManager({ pageId, team }: { pageId: string; team: TeamMember
                       </option>
                     ))}
                   </Select>
+                  {member.mfa && !member.isOwner ? (
+                    <Button
+                      variant="ghost"
+                      disabled={pending}
+                      onClick={() => {
+                        if (window.confirm(t('users.resetMfaConfirm', { name: member.name })))
+                          void run(() => api(`/users/${member.id}/mfa/reset`, { method: 'POST' }));
+                      }}
+                    >
+                      {t('users.resetMfa')}
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost"
                     disabled={pending}

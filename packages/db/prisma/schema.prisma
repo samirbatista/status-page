@@ -1,6 +1,7 @@
 // F0: identidade, páginas, componentes, auditoria e configurações.
 // F1: incidentes, manutenções e templates de incidente.
 // F2: tema visual, uploads, domínios próprios e páginas privadas.
+// F3: provedores LDAP, mapeamento de grupos, MFA e conta de emergência.
 // Notificações e monitoramento entram nas fases seguintes.
 
 generator client {
@@ -80,6 +81,18 @@ enum IdentityProvider {
   ldap
 }
 
+enum LdapKind {
+  active_directory
+  openldap
+}
+
+/// Segurança da conexão LDAP. `none` só é aceito para laboratório.
+enum LdapSecurity {
+  none
+  starttls
+  ldaps
+}
+
 // ---------------------------------------------------------------------------
 // Páginas e componentes
 // ---------------------------------------------------------------------------
@@ -103,6 +116,7 @@ model Page {
   components   PageComponent[]
   groups       ComponentGroup[]
   roles        UserPageRole[]
+  ldapMappings LdapGroupMapping[]
   incidents    Incident[]
   maintenances Maintenance[]
   templates    IncidentTemplate[]
@@ -373,6 +387,8 @@ model User {
   isOwner      Boolean   @default(false) @map("is_owner")
   /// Conta de emergência: login local sempre permitido, mesmo com LDAP fora do ar.
   isBreakGlass Boolean   @default(false) @map("is_break_glass")
+  /// O papel de Dono veio de um mapeamento de grupo LDAP (e é removido se o grupo sair).
+  ownerViaLdap Boolean   @default(false) @map("owner_via_ldap")
   disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(3)
   lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -387,6 +403,9 @@ model User {
   incidentUpdates    IncidentUpdate[]
   maintenances       Maintenance[]
   maintenanceUpdates MaintenanceUpdate[]
+  totp               TotpSecret?
+  webauthn           WebAuthnCredential[]
+  recoveryCodes      RecoveryCode[]
 
   @@map("users")
 }
@@ -399,13 +418,27 @@ model UserIdentity {
   /// Para `local`: o e-mail normalizado. Para `ldap`: `<providerId>:<objectGUID ou DN>`.
   subject      String
   passwordHash String?          @map("password_hash")
+  /// Provedor LDAP de origem (somente identidades `ldap`).
+  ldapProviderId String?        @map("ldap_provider_id") @db.Uuid
+  /// DN atual do usuário no diretório.
+  dn           String?
+  /// Login usado no diretório (sAMAccountName, uid...).
+  username     String?
+  /// DNs dos grupos lidos na última sincronização.
+  groups       String[]         @default([])
+  /// Conta desativada ou removida do diretório: perde o acesso até ser reativada.
+  disabledAt   DateTime?        @map("disabled_at") @db.Timestamptz(3)
+  lastSyncAt   DateTime?        @map("last_sync_at") @db.Timestamptz(3)
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ldapProvider LdapProvider? @relation(fields: [ldapProviderId], references: [id], onDelete: Cascade)
+  sessions     Session[]
 
   @@unique([provider, subject])
   @@index([userId])
+  @@index([ldapProviderId])
   @@map("user_identities")
 }
 
@@ -432,17 +465,140 @@ model Session {
   tokenHash    String    @unique @map("token_hash")
   ip           String?
   userAgent    String?   @map("user_agent")
+  /// O segundo fator foi confirmado nesta sessão.
   mfaVerified  Boolean   @default(false) @map("mfa_verified")
+  /// Identidade usada no login (para revogar sessões quando o diretório desativa a conta).
+  identityId   String?   @map("identity_id") @db.Uuid
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   lastActiveAt DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(3)
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
 
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identity UserIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([identityId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// LDAP e MFA
+// ---------------------------------------------------------------------------
+
+model LdapProvider {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  name              String
+  kind              LdapKind
+  enabled           Boolean      @default(true)
+  /// Ordem em que os provedores são tentados no login.
+  position          Int          @default(0)
+  host              String
+  port              Int
+  security          LdapSecurity @default(ldaps)
+  /// Valida o certificado do servidor (desligar só em laboratório).
+  verifyCertificate Boolean      @default(true) @map("verify_certificate")
+  /// CA própria em PEM, para certificados emitidos pela PKI interna.
+  caCertificate     String?      @map("ca_certificate")
+  bindDn            String       @map("bind_dn")
+  /// Senha do bind de serviço, cifrada com AES-256-GCM (APP_SECRET).
+  bindPasswordEnc   String       @map("bind_password_enc")
+  baseDn            String       @map("base_dn")
+  /// Filtro de busca do usuário; `{username}` é substituído pelo login escapado.
+  userFilter        String       @map("user_filter")
+  usernameAttribute String       @map("username_attribute")
+  emailAttribute    String       @map("email_attribute")
+  nameAttribute     String       @map("name_attribute")
+  /// Identificador estável: objectGUID (AD) ou entryUUID (OpenLDAP).
+  uniqueIdAttribute String       @map("unique_id_attribute")
+  /// AD: resolve grupos aninhados com LDAP_MATCHING_RULE_IN_CHAIN.
+  nestedGroups      Boolean      @default(true) @map("nested_groups")
+  /// OpenLDAP: base e filtro da busca de grupos (`{dn}` e `{username}`).
+  groupBaseDn       String?      @map("group_base_dn")
+  groupFilter       String?      @map("group_filter")
+  /// Papel atribuído manualmente prevalece sobre o mapeado por grupo.
+  manualRolesWin    Boolean      @default(true) @map("manual_roles_win")
+  /// Vincula o login LDAP a um usuário local existente com o mesmo e-mail.
+  linkByEmail       Boolean      @default(false) @map("link_by_email")
+  timeoutMs         Int          @default(5000) @map("timeout_ms")
+  lastSyncAt        DateTime?    @map("last_sync_at") @db.Timestamptz(3)
+  lastSyncError     String?      @map("last_sync_error")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  mappings   LdapGroupMapping[]
+  identities UserIdentity[]
+
+  @@map("ldap_providers")
+}
+
+/// Grupo LDAP → papel. Sem página, o único papel aceito é `owner` (global).
+model LdapGroupMapping {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  providerId String   @map("provider_id") @db.Uuid
+  /// DN do grupo, normalizado em minúsculas.
+  groupDn    String   @map("group_dn")
+  pageId     String?  @map("page_id") @db.Uuid
+  role       Role
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  provider LdapProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  page     Page?        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, groupDn, pageId])
+  @@index([pageId])
+  @@map("ldap_group_mappings")
+}
+
+model TotpSecret {
+  userId      String    @id @map("user_id") @db.Uuid
+  /// Segredo base32 cifrado com AES-256-GCM.
+  secretEnc   String    @map("secret_enc")
+  /// Nulo enquanto o cadastro não foi confirmado com um código.
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(3)
+  /// Último passo de 30 s aceito, para impedir reuso do mesmo código.
+  lastStep    BigInt    @default(0) @map("last_step")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("totp_secrets")
+}
+
+model WebAuthnCredential {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  /// ID da credencial em base64url.
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  /// Domínio (RP ID) em que a credencial foi registrada.
+  rpId         String    @map("rp_id")
+  name         String
+  backedUp     Boolean   @default(false) @map("backed_up")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(3)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([expiresAt])
-  @@map("sessions")
+  @@map("webauthn_credentials")
+}
+
+/// Códigos de recuperação de uso único, guardados como HMAC-SHA256.
+model RecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@map("recovery_codes")
 }
 
 // ---------------------------------------------------------------------------

@@ -1,23 +1,31 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Role } from '@status-page/shared';
+import { mfaRequiredFor, type Role } from '@status-page/shared';
 import { API_ENV, type ApiEnv } from '../env.js';
 import { PrismaService } from '../infra/prisma.service.js';
-import { type AuthContext } from '../common/auth.types.js';
+import { type AuthContext, type MfaStage } from '../common/auth.types.js';
+import { AuthSettingsService } from './auth-settings.service.js';
 
 export const SESSION_COOKIE = 'sp_session';
 
 /** Atualiza `lastActiveAt` no máximo uma vez por minuto por sessão. */
 const TOUCH_INTERVAL_MS = 60_000;
+/** Tempo para confirmar o segundo fator depois da senha. */
+export const MFA_PENDING_TTL_MS = 10 * 60_000;
 
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
+}
+
+function newToken(): string {
+  return randomBytes(32).toString('base64url');
 }
 
 @Injectable()
 export class SessionService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly settings: AuthSettingsService,
     @Inject(API_ENV) private readonly env: ApiEnv,
   ) {}
 
@@ -28,12 +36,14 @@ export class SessionService {
   async create(
     userId: string,
     meta: { ip: string | null; userAgent: string | null },
+    identityId: string | null = null,
   ): Promise<{ token: string; id: string; expiresAt: Date }> {
-    const token = randomBytes(32).toString('base64url');
+    const token = newToken();
     const expiresAt = new Date(Date.now() + this.maxAgeMs);
     const session = await this.prisma.client.session.create({
       data: {
         userId,
+        identityId,
         tokenHash: hashToken(token),
         ip: meta.ip,
         userAgent: meta.userAgent?.slice(0, 512) ?? null,
@@ -47,7 +57,16 @@ export class SessionService {
   async resolve(token: string): Promise<AuthContext | null> {
     const session = await this.prisma.client.session.findUnique({
       where: { tokenHash: hashToken(token) },
-      include: { user: { include: { pageRoles: true } } },
+      include: {
+        identity: { select: { disabledAt: true } },
+        user: {
+          include: {
+            pageRoles: true,
+            totp: { select: { confirmedAt: true } },
+            _count: { select: { webauthn: true } },
+          },
+        },
+      },
     });
     const now = Date.now();
     if (
@@ -55,9 +74,25 @@ export class SessionService {
       session.revokedAt ||
       session.expiresAt.getTime() <= now ||
       session.lastActiveAt.getTime() + this.env.SESSION_IDLE_MINUTES * 60_000 <= now ||
-      session.user.disabledAt
+      session.user.disabledAt ||
+      // A conta do diretório usada no login foi desativada.
+      session.identity?.disabledAt
     ) {
       return null;
+    }
+
+    const { user } = session;
+    const pageRoles = new Map(user.pageRoles.map((r) => [r.pageId, r.role as Role]));
+    const hasFactor = Boolean(user.totp?.confirmedAt) || user._count.webauthn > 0;
+    let mfa: MfaStage = 'ok';
+    if (hasFactor && !session.mfaVerified) {
+      if (session.createdAt.getTime() + MFA_PENDING_TTL_MS <= now) return null;
+      mfa = 'pending';
+    } else if (!hasFactor) {
+      const policy = (await this.settings.get()).mfa;
+      if (mfaRequiredFor(policy, { isOwner: user.isOwner, roles: pageRoles.values() })) {
+        mfa = 'enroll';
+      }
     }
 
     if (now - session.lastActiveAt.getTime() > TOUCH_INTERVAL_MS) {
@@ -67,12 +102,31 @@ export class SessionService {
       });
     }
 
-    const { user } = session;
     return {
       sessionId: session.id,
-      user: { id: user.id, email: user.email, name: user.name, isOwner: user.isOwner },
-      pageRoles: new Map(user.pageRoles.map((r) => [r.pageId, r.role as Role])),
+      mfa,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isOwner: user.isOwner,
+        isBreakGlass: user.isBreakGlass,
+      },
+      pageRoles,
     };
+  }
+
+  /**
+   * O segundo fator foi confirmado: marca a sessão e troca o token, para que um
+   * token obtido antes do MFA (fixação de sessão) não ganhe o acesso completo.
+   */
+  async completeMfa(sessionId: string): Promise<string> {
+    const token = newToken();
+    await this.prisma.client.session.update({
+      where: { id: sessionId },
+      data: { mfaVerified: true, tokenHash: hashToken(token), lastActiveAt: new Date() },
+    });
+    return token;
   }
 
   async revoke(sessionId: string): Promise<void> {

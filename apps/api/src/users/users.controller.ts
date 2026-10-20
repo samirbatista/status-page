@@ -69,6 +69,17 @@ export class UsersController {
     await this.users.resetPassword(userId, body.password, audit);
   }
 
+  /** Redefine o MFA (Dono, ou Admin de uma página da equipe do usuário). */
+  @Post('users/:userId/mfa/reset')
+  @HttpCode(204)
+  async resetMfa(
+    @CurrentAuth() auth: AuthContext,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Audit() audit: AuditContext,
+  ) {
+    await this.users.resetMfa(auth, userId, audit);
+  }
+
   /** Busca de usuários para adicionar à equipe; disponível para Admins de alguma página. */
   @Get('users/directory')
   directory(

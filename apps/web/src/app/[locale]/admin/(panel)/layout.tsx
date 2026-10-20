@@ -50,6 +50,7 @@ export default async function PanelLayout({
           </nav>
           <nav className="flex flex-col gap-1">
             {me.isOwner ? <NavLink href="/admin/users">{t('users')}</NavLink> : null}
+            {me.isOwner ? <NavLink href="/admin/settings/auth">{t('auth')}</NavLink> : null}
             {isAdminSomewhere ? <NavLink href="/admin/audit">{t('audit')}</NavLink> : null}
             <NavLink href="/admin/profile">{t('profile')}</NavLink>
             <LogoutButton />

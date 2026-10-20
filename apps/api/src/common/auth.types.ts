@@ -5,11 +5,21 @@ export interface AuthUser {
   email: string;
   name: string;
   isOwner: boolean;
+  isBreakGlass: boolean;
 }
+
+/**
+ * Etapa do segundo fator na sessão:
+ * - `ok`: liberada (sem MFA ou com MFA já confirmado);
+ * - `pending`: senha conferida, falta confirmar o segundo fator;
+ * - `enroll`: a política exige MFA e o usuário ainda não cadastrou nenhum fator.
+ */
+export type MfaStage = 'ok' | 'pending' | 'enroll';
 
 export interface AuthContext {
   user: AuthUser;
   sessionId: string;
+  mfa: MfaStage;
   /** Papel do usuário em cada página (pageId → papel). */
   pageRoles: Map<string, Role>;
 }

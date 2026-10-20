@@ -38,7 +38,17 @@ export const pageRoleSchema = z.enum(ROLES).exclude(['owner']);
 
 // --- Autenticação -----------------------------------------------------------
 
-export const loginSchema = z.object({ email, password });
+/**
+ * Login: e-mail (conta local) ou usuário do diretório (sAMAccountName, UPN, uid).
+ * `email` continua aceito como nome do campo por compatibilidade.
+ */
+export const loginSchema = z.preprocess(
+  (raw) =>
+    raw && typeof raw === 'object' && !('login' in raw) && 'email' in raw
+      ? { ...raw, login: (raw as { email: unknown }).email }
+      : raw,
+  z.object({ login: z.string().trim().min(1).max(256), password }),
+);
 export const changePasswordSchema = z.object({
   currentPassword: password,
   newPassword: password,
@@ -56,6 +66,8 @@ export const userUpdateSchema = z.object({
   name: text(120).optional(),
   isOwner: z.boolean().optional(),
   disabled: z.boolean().optional(),
+  /** Conta de emergência: entra com senha local mesmo quando o login local está restrito. */
+  breakGlass: z.boolean().optional(),
 });
 export const resetPasswordSchema = z.object({ password });
 export const pageRoleAssignSchema = z.object({ userId: uuid, role: pageRoleSchema });

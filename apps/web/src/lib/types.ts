@@ -1,4 +1,6 @@
 import {
+  type LdapKind,
+  type LdapSecurity,
   type PrivateAccessMode,
   type Theme,
   type ComponentStatus,
@@ -78,13 +80,75 @@ export interface PublicSummary {
   pastIncidentDays: number;
 }
 
+export type MfaStage = 'ok' | 'pending' | 'enroll';
+
 export interface Me {
   id: string;
   email: string;
   name: string;
   isOwner: boolean;
+  isBreakGlass?: boolean;
+  /** Etapa do segundo fator: `pending` e `enroll` só dão acesso à tela de MFA. */
+  mfa: MfaStage;
+  mfaMethods: ('totp' | 'webauthn')[];
   providers: string[];
   pages: { id: string; slug: string; name: string; role: Role }[];
+}
+
+export interface MfaStatus {
+  stage: MfaStage;
+  required: boolean;
+  totp: boolean;
+  webauthn: {
+    id: string;
+    name: string;
+    rpId: string;
+    createdAt: string;
+    lastUsedAt: string | null;
+  }[];
+  recoveryCodesRemaining: number;
+}
+
+export interface LdapProvider {
+  id: string;
+  name: string;
+  kind: LdapKind;
+  enabled: boolean;
+  position: number;
+  host: string;
+  port: number;
+  security: LdapSecurity;
+  verifyCertificate: boolean;
+  caCertificate: string | null;
+  bindDn: string;
+  baseDn: string;
+  userFilter: string;
+  usernameAttribute: string;
+  emailAttribute: string;
+  nameAttribute: string;
+  uniqueIdAttribute: string;
+  nestedGroups: boolean;
+  groupBaseDn: string | null;
+  groupFilter: string | null;
+  manualRolesWin: boolean;
+  linkByEmail: boolean;
+  timeoutMs: number;
+  lastSyncAt: string | null;
+  lastSyncError: string | null;
+  users: number;
+  mappingCount?: number;
+}
+
+export interface LdapMapping {
+  id: string;
+  groupDn: string;
+  pageId: string | null;
+  role: Role;
+  page: { name: string } | null;
+}
+
+export interface LdapProviderDetail extends LdapProvider {
+  mappings: LdapMapping[];
 }
 
 export interface AdminPage {
@@ -197,7 +261,11 @@ export interface TeamMember {
   email: string;
   name: string;
   disabledAt: string | null;
+  isOwner: boolean;
   role: Exclude<Role, 'owner'>;
+  /** Papel definido manualmente (falso: veio de um grupo LDAP). */
+  manual: boolean;
+  mfa: boolean;
 }
 
 export interface AdminUser {
@@ -209,8 +277,15 @@ export interface AdminUser {
   disabledAt: string | null;
   lastLoginAt: string | null;
   createdAt: string;
-  identities: { provider: string }[];
-  pageRoles: { pageId: string; role: Role }[];
+  identities: {
+    provider: string;
+    username: string | null;
+    disabledAt: string | null;
+    lastSyncAt: string | null;
+    ldapProvider: { name: string } | null;
+  }[];
+  pageRoles: { pageId: string; role: Role; manual: boolean }[];
+  mfa: { totp: boolean; webauthn: number };
 }
 
 export interface AuditEntry {

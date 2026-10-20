@@ -7,17 +7,27 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Req,
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { changePasswordSchema, loginSchema, type LoginInput } from '@status-page/shared';
+import { type AuditContext } from '@status-page/core';
+import {
+  authSettingsSchema,
+  changePasswordSchema,
+  loginSchema,
+  type AuthSettings,
+  type LoginInput,
+} from '@status-page/shared';
 import { type AuthContext } from '../common/auth.types.js';
-import { Public } from '../common/decorators.js';
+import { AllowMfaStage, Public, RequireOwner } from '../common/decorators.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
-import { CurrentAuth, requestMeta } from '../common/request-meta.js';
+import { Audit, CurrentAuth, requestMeta } from '../common/request-meta.js';
 import { ZodPipe } from '../common/zod.pipe.js';
+import { AuthSettingsService } from './auth-settings.service.js';
 import { AuthService } from './auth.service.js';
+import { setSessionCookie } from './session-cookie.js';
 import { SESSION_COOKIE, SessionService } from './session.service.js';
 
 @Controller('auth')
@@ -26,6 +36,7 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
     private readonly rateLimit: RateLimitService,
+    private readonly settings: AuthSettingsService,
   ) {}
 
   @Public()
@@ -38,20 +49,15 @@ export class AuthController {
   ) {
     const meta = requestMeta(req);
     await this.rateLimit.enforce(`login:${meta.ip}`, 20, 60);
-    const session = await this.auth.login(body, meta);
-    res.cookie(SESSION_COOKIE, session.token, {
-      httpOnly: true,
-      // Atrás do Caddy com HTTPS, req.secure vem do X-Forwarded-Proto.
-      secure: req.secure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: this.sessions.maxAgeMs,
-    });
-    return { ok: true };
+    const { session, mfa } = await this.auth.login(body, meta);
+    setSessionCookie(req, res, session.token, this.sessions.maxAgeMs);
+    // `mfa`: `pending` pede o segundo fator; `enroll`, o cadastro obrigatório.
+    return { ok: true, mfa: mfa === 'ok' ? null : mfa };
   }
 
   @Post('logout')
   @HttpCode(204)
+  @AllowMfaStage('pending', 'enroll')
   async logout(
     @CurrentAuth() auth: AuthContext,
     @Req() req: Request,
@@ -62,6 +68,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AllowMfaStage('pending', 'enroll')
   me(@CurrentAuth() auth: AuthContext) {
     return this.auth.me(auth);
   }
@@ -89,5 +96,22 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<void> {
     await this.auth.changePassword(auth, body, requestMeta(req));
+  }
+
+  // --- Política de autenticação (Dono) ---------------------------------------
+
+  @Get('settings')
+  @RequireOwner()
+  settingsGet() {
+    return this.settings.get();
+  }
+
+  @Put('settings')
+  @RequireOwner()
+  settingsUpdate(
+    @Body(new ZodPipe(authSettingsSchema)) body: AuthSettings,
+    @Audit() audit: AuditContext,
+  ) {
+    return this.settings.update(body, audit);
   }
 }

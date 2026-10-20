@@ -1,0 +1,53 @@
+# Diretório de teste (OpenLDAP) usado pelos testes de integração e pelo
+# ambiente de demonstração. Senhas de exemplo: não use em produção.
+
+dn: ou=Usuarios,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: Usuarios
+
+dn: ou=Grupos,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: Grupos
+
+dn: uid=ana,ou=Usuarios,dc=empresa,dc=local
+objectClass: inetOrgPerson
+uid: ana
+cn: Ana Souza
+sn: Souza
+mail: ana@empresa.local
+userPassword: Senha-da-Ana-2026
+
+dn: uid=bruno,ou=Usuarios,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: bruno
+cn: Bruno Lima
+sn: Lima
+mail: bruno@empresa.local
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/bruno
+userPassword: Senha-do-Bruno-2026
+
+dn: uid=carla,ou=Usuarios,dc=empresa,dc=local
+objectClass: inetOrgPerson
+uid: carla
+cn: Carla Dias
+sn: Dias
+userPassword: Senha-da-Carla-2026
+
+dn: cn=NOC,ou=Grupos,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: NOC
+member: uid=ana,ou=Usuarios,dc=empresa,dc=local
+
+dn: cn=TI,ou=Grupos,dc=empresa,dc=local
+objectClass: groupOfUniqueNames
+cn: TI
+uniqueMember: uid=bruno,ou=Usuarios,dc=empresa,dc=local
+
+dn: cn=plantao,ou=Grupos,dc=empresa,dc=local
+objectClass: posixGroup
+cn: plantao
+gidNumber: 20001
+memberUid: bruno

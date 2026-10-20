@@ -100,6 +100,9 @@ services:
     restart: unless-stopped
     environment:
       <<: *backend-env
+      # Decifra a senha do bind LDAP na sincronização periódica.
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env}
+      LDAP_SYNC_MINUTES: ${LDAP_SYNC_MINUTES:-15}
     healthcheck:
       <<: *node-healthcheck
       test:
