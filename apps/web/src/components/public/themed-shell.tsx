@@ -28,6 +28,22 @@ function Logo({ theme, name }: { theme: Theme; name: string }) {
  * cor, fonte, logo, estilo de cabeçalho, textos, links e CSS/HTML
  * personalizados (sanitizados no servidor ao salvar o tema).
  */
+function SubscribeLink({ slug, label, light }: { slug: string; label: string; light?: boolean }) {
+  return (
+    <Link
+      href={`/p/${slug}/subscribe`}
+      className={cx(
+        'rounded-md border px-3 py-1.5 text-sm font-medium',
+        light
+          ? 'border-white/70 text-white hover:bg-white/10'
+          : 'border-[var(--border)] bg-[var(--surface)] text-[var(--link)] hover:bg-[var(--background)]',
+      )}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export function ThemedShell({ page, children }: { page: PublicPage; children: ReactNode }) {
   const t = useTranslations('common');
   const { theme } = page;
@@ -73,7 +89,10 @@ export function ThemedShell({ page, children }: { page: PublicPage; children: Re
         >
           <header className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-12">
             {title}
-            <LanguageSwitcher />
+            <div className="flex flex-wrap items-center gap-3">
+              <SubscribeLink slug={page.slug} label={t('subscribe')} light />
+              <LanguageSwitcher />
+            </div>
           </header>
         </div>
       ) : null}
@@ -87,7 +106,10 @@ export function ThemedShell({ page, children }: { page: PublicPage; children: Re
             )}
           >
             {title}
-            <LanguageSwitcher />
+            <div className="flex flex-wrap items-center gap-3">
+              <SubscribeLink slug={page.slug} label={t('subscribe')} />
+              <LanguageSwitcher />
+            </div>
           </header>
         ) : null}
         {theme.customHeaderHtml ? (

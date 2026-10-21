@@ -41,3 +41,34 @@ export function loadEnv<T extends z.ZodType>(
   }
   return result.data;
 }
+
+/** Notificações: endereço público (links nas mensagens) e endpoints dos provedores. */
+export const notifyEnvSchema = z.object({
+  /** Endereço público do site, ex.: https://status.empresa.com.br */
+  PUBLIC_URL: z.url({ protocol: /^https?$/ }).default('http://localhost'),
+  /** Substituem as APIs reais em laboratório/testes. */
+  TELEGRAM_API_URL: z.url().optional(),
+  WHATSAPP_API_URL: z.url().optional(),
+  /** Hosts extras aceitos em webhooks de assinantes (vírgula), só para laboratório. */
+  WEBHOOK_EXTRA_HOSTS: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((h) => h.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+});
+
+export type NotifyEnvVars = z.infer<typeof notifyEnvSchema>;
+
+/** Converte as variáveis no formato usado pelos notifiers. */
+export function notifyEnv(env: NotifyEnvVars) {
+  return {
+    publicUrl: env.PUBLIC_URL,
+    telegramApiUrl: env.TELEGRAM_API_URL,
+    whatsappApiUrl: env.WHATSAPP_API_URL,
+    webhookExtraHosts: env.WEBHOOK_EXTRA_HOSTS,
+  };
+}

@@ -2,7 +2,8 @@
 // F1: incidentes, manutenções e templates de incidente.
 // F2: tema visual, uploads, domínios próprios e páginas privadas.
 // F3: provedores LDAP, mapeamento de grupos, MFA e conta de emergência.
-// Notificações e monitoramento entram nas fases seguintes.
+// F4: notificações (canais da equipe, templates, fila de entregas) e assinantes.
+// Monitoramento entra na fase seguinte.
 
 generator client {
   provider     = "prisma-client"
@@ -81,6 +82,43 @@ enum IdentityProvider {
   ldap
 }
 
+/// Canal de notificação (da equipe ou do assinante).
+enum NotificationKind {
+  email
+  telegram
+  slack
+  discord
+  teams
+  google_chat
+  whatsapp
+  webhook
+}
+
+enum NotificationEventType {
+  incident_created
+  incident_updated
+  incident_resolved
+  maintenance_scheduled
+  maintenance_reminder
+  maintenance_started
+  maintenance_updated
+  maintenance_completed
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+  failed
+  skipped
+}
+
+enum SubscriberStatus {
+  /// Aguardando a confirmação (código, vínculo do Telegram ou convite).
+  pending
+  active
+  unsubscribed
+}
+
 enum LdapKind {
   active_directory
   openldap
@@ -112,16 +150,21 @@ model Page {
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  domains      PageDomain[]
-  components   PageComponent[]
-  groups       ComponentGroup[]
-  roles        UserPageRole[]
-  ldapMappings LdapGroupMapping[]
-  incidents    Incident[]
-  maintenances Maintenance[]
-  templates    IncidentTemplate[]
-  themes       PageTheme[]
-  uploads      Upload[]
+  domains         PageDomain[]
+  components      PageComponent[]
+  groups          ComponentGroup[]
+  roles           UserPageRole[]
+  ldapMappings    LdapGroupMapping[]
+  channels        NotificationChannel[]
+  templatesNotify NotificationTemplate[]
+  events          NotificationEvent[]
+  deliveries      NotificationDelivery[]
+  subscribers     Subscriber[]
+  incidents       Incident[]
+  maintenances    Maintenance[]
+  templates       IncidentTemplate[]
+  themes          PageTheme[]
+  uploads         Upload[]
 
   @@map("pages")
 }
@@ -168,6 +211,7 @@ model Component {
 
   pages           PageComponent[]
   history         ComponentStatusHistory[]
+  subscribers     SubscriberComponent[]
   incidentUpdates IncidentUpdateComponent[]
   maintenances    MaintenanceComponent[]
 
@@ -313,6 +357,8 @@ model Maintenance {
   autoComplete   Boolean           @default(true) @map("auto_complete")
   startedAt      DateTime?         @map("started_at") @db.Timestamptz(3)
   completedAt    DateTime?         @map("completed_at") @db.Timestamptz(3)
+  /// Lembrete aos assinantes (24 h antes) já enviado.
+  reminderSentAt DateTime?         @map("reminder_sent_at") @db.Timestamptz(3)
   createdById    String?           @map("created_by_id") @db.Uuid
   createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -412,25 +458,25 @@ model User {
 
 /// Forma de autenticação do usuário. Local guarda o hash argon2id; LDAP guarda o DN.
 model UserIdentity {
-  id           String           @id @default(uuid(7)) @db.Uuid
-  userId       String           @map("user_id") @db.Uuid
-  provider     IdentityProvider
+  id             String           @id @default(uuid(7)) @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  provider       IdentityProvider
   /// Para `local`: o e-mail normalizado. Para `ldap`: `<providerId>:<objectGUID ou DN>`.
-  subject      String
-  passwordHash String?          @map("password_hash")
+  subject        String
+  passwordHash   String?          @map("password_hash")
   /// Provedor LDAP de origem (somente identidades `ldap`).
-  ldapProviderId String?        @map("ldap_provider_id") @db.Uuid
+  ldapProviderId String?          @map("ldap_provider_id") @db.Uuid
   /// DN atual do usuário no diretório.
-  dn           String?
+  dn             String?
   /// Login usado no diretório (sAMAccountName, uid...).
-  username     String?
+  username       String?
   /// DNs dos grupos lidos na última sincronização.
-  groups       String[]         @default([])
+  groups         String[]         @default([])
   /// Conta desativada ou removida do diretório: perde o acesso até ser reativada.
-  disabledAt   DateTime?        @map("disabled_at") @db.Timestamptz(3)
-  lastSyncAt   DateTime?        @map("last_sync_at") @db.Timestamptz(3)
-  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  disabledAt     DateTime?        @map("disabled_at") @db.Timestamptz(3)
+  lastSyncAt     DateTime?        @map("last_sync_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   ldapProvider LdapProvider? @relation(fields: [ldapProviderId], references: [id], onDelete: Cascade)
@@ -599,6 +645,190 @@ model RecoveryCode {
 
   @@unique([userId, codeHash])
   @@map("recovery_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Notificações e assinantes
+// ---------------------------------------------------------------------------
+
+/// Destino interno da equipe que recebe os eventos da página.
+model NotificationChannel {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  pageId        String           @map("page_id") @db.Uuid
+  kind          NotificationKind
+  name          String
+  enabled       Boolean          @default(true)
+  /// Configuração (URL do webhook, chat ID, destinatários, segredo HMAC) cifrada em JSON.
+  configEnc     String           @map("config_enc")
+  /// Tipos de evento recebidos: `incident` e/ou `maintenance`.
+  events        String[]         @default(["incident", "maintenance"])
+  locale        String           @default("pt-BR")
+  lastTestAt    DateTime?        @map("last_test_at") @db.Timestamptz(3)
+  lastTestError String?          @map("last_test_error")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page       Page                   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([pageId])
+  @@map("notification_channels")
+}
+
+/// Texto personalizado de uma mensagem; sem registro, vale o padrão embutido.
+model NotificationTemplate {
+  id        String                @id @default(uuid(7)) @db.Uuid
+  pageId    String                @map("page_id") @db.Uuid
+  /// Tipo de canal (`email`, `slack`...) ou `all` para todos.
+  channel   String
+  event     NotificationEventType
+  locale    String
+  subject   String?
+  body      String
+  updatedAt DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, channel, event, locale])
+  @@map("notification_templates")
+}
+
+/// Evento a notificar (outbox): gravado na mesma transação da mudança.
+model NotificationEvent {
+  id            String                @id @default(uuid(7)) @db.Uuid
+  pageId        String                @map("page_id") @db.Uuid
+  type          NotificationEventType
+  incidentId    String?               @map("incident_id") @db.Uuid
+  maintenanceId String?               @map("maintenance_id") @db.Uuid
+  /// Componentes afetados (para filtrar os assinantes).
+  componentIds  String[]              @default([]) @map("component_ids")
+  /// Retrato do incidente/manutenção no momento do evento.
+  payload       Json
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Entregas já criadas para canais e assinantes.
+  fannedOutAt   DateTime?             @map("fanned_out_at") @db.Timestamptz(3)
+
+  page       Page                   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([fannedOutAt, createdAt])
+  @@index([pageId, createdAt])
+  @@map("notification_events")
+}
+
+/// Registro de cada envio (canal da equipe ou assinante), com tentativas e erro.
+model NotificationDelivery {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  pageId       String           @map("page_id") @db.Uuid
+  eventId      String?          @map("event_id") @db.Uuid
+  channelId    String?          @map("channel_id") @db.Uuid
+  subscriberId String?          @map("subscriber_id") @db.Uuid
+  kind         NotificationKind
+  /// Destino mascarado, para exibição.
+  target       String
+  status       DeliveryStatus   @default(pending)
+  attempts     Int              @default(0)
+  lastError    String?          @map("last_error")
+  sentAt       DateTime?        @map("sent_at") @db.Timestamptz(3)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page       Page                 @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  event      NotificationEvent?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  channel    NotificationChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  subscriber Subscriber?          @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, channelId])
+  @@unique([eventId, subscriberId])
+  @@index([pageId, createdAt])
+  @@index([status])
+  @@map("notification_deliveries")
+}
+
+model Subscriber {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  pageId          String           @map("page_id") @db.Uuid
+  kind            NotificationKind
+  /// Contato (e-mail, telefone, URL do webhook, chat do Telegram) cifrado.
+  targetEnc       String?          @map("target_enc")
+  /// HMAC do contato normalizado: unicidade e busca sem expor o dado.
+  targetHash      String?          @map("target_hash")
+  /// Contato mascarado para exibição (an***@empresa.com).
+  targetDisplay   String?          @map("target_display")
+  locale          String           @default("pt-BR")
+  allComponents   Boolean          @default(true) @map("all_components")
+  /// `incident` e/ou `maintenance`.
+  eventTypes      String[]         @default(["incident", "maintenance"]) @map("event_types")
+  status          SubscriberStatus @default(pending)
+  /// `form` (página pública) ou `import` (CSV do administrador).
+  source          String           @default("form")
+  /// Token do link de gerenciamento/cancelamento: hash para a busca, cifrado para montar o link.
+  manageTokenEnc  String           @map("manage_token_enc")
+  manageTokenHash String           @unique @map("manage_token_hash")
+  /// Token do vínculo pelo Telegram (`/start <token>`) ou do convite de importação (hash).
+  linkTokenHash   String?          @unique @map("link_token_hash")
+  linkExpiresAt   DateTime?        @map("link_expires_at") @db.Timestamptz(3)
+  confirmedAt     DateTime?        @map("confirmed_at") @db.Timestamptz(3)
+  unsubscribedAt  DateTime?        @map("unsubscribed_at") @db.Timestamptz(3)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page       Page                   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  components SubscriberComponent[]
+  codes      VerificationCode[]
+  deliveries NotificationDelivery[]
+
+  @@unique([pageId, kind, targetHash])
+  @@index([pageId, status])
+  @@index([status, createdAt])
+  @@map("subscribers")
+}
+
+model SubscriberComponent {
+  subscriberId String @map("subscriber_id") @db.Uuid
+  componentId  String @map("component_id") @db.Uuid
+
+  subscriber Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  component  Component  @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@id([subscriberId, componentId])
+  @@index([componentId])
+  @@map("subscriber_components")
+}
+
+/// Código de confirmação (6 dígitos, 15 min, 5 tentativas); só o hash é guardado.
+model VerificationCode {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  subscriberId String    @map("subscriber_id") @db.Uuid
+  codeHash     String    @map("code_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  attempts     Int       @default(0)
+  consumedAt   DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  subscriber Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@index([subscriberId, createdAt])
+  @@map("verification_codes")
+}
+
+/// Registro de consentimento (LGPD): permanece mesmo após a exclusão do assinante.
+model ConsentRecord {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  pageId       String   @map("page_id") @db.Uuid
+  subscriberId String?  @map("subscriber_id") @db.Uuid
+  targetHash   String?  @map("target_hash")
+  /// `subscribe`, `confirm`, `update`, `unsubscribe` ou `delete`.
+  action       String
+  /// Texto exibido e aceito pelo visitante.
+  text         String
+  ip           String?
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([pageId, createdAt])
+  @@index([subscriberId])
+  @@map("consent_records")
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { type PrismaClient } from '@status-page/db';
 import { type Db } from './db.js';
 import { recordAudit } from './audit.js';
 import { setComponentStatuses } from './component-status.js';
+import { recordMaintenanceEvent } from './notification-events.js';
 
 export interface TransitionOptions {
   actorId?: string | null;
@@ -57,6 +58,9 @@ export async function startMaintenance(
       createdAt: at,
     },
   });
+  if (options.notify ?? true) {
+    await recordMaintenanceEvent(db, maintenanceId, 'maintenance_started', options.body ?? '');
+  }
   await recordAudit(db, {
     actorId: options.actorId,
     action: 'maintenance.start',
@@ -122,6 +126,9 @@ export async function completeMaintenance(
       createdAt: at,
     },
   });
+  if (options.notify ?? true) {
+    await recordMaintenanceEvent(db, maintenanceId, 'maintenance_completed', options.body ?? '');
+  }
   await recordAudit(db, {
     actorId: options.actorId,
     action: 'maintenance.complete',

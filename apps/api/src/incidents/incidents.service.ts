@@ -4,6 +4,7 @@ import {
   backfillComponentStatus,
   type Db,
   recordAudit,
+  recordIncidentEvent,
   setComponentStatuses,
   type StatusChange,
 } from '@status-page/core';
@@ -13,6 +14,7 @@ import {
   type IncidentUpdateCreateInput,
 } from '@status-page/shared';
 import { assertComponentsInPage } from '../common/page-guards.js';
+import { NotifyService } from '../infra/notify.service.js';
 import { PrismaService } from '../infra/prisma.service.js';
 
 const DETAIL_INCLUDE = {
@@ -28,7 +30,10 @@ const DETAIL_INCLUDE = {
 
 @Injectable()
 export class IncidentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+  ) {}
 
   async list(pageId: string, filter: { active?: boolean; cursor?: string; limit: number }) {
     const incidents = await this.prisma.client.incident.findMany({
@@ -109,6 +114,14 @@ export class IncidentsService {
         await setComponentStatuses(tx, input.components, { actorId: audit.actorId, at: now });
       }
 
+      // Retroativo nunca notifica.
+      if (!backfill && input.notify) {
+        await recordIncidentEvent(
+          tx,
+          incident.id,
+          status === 'resolved' ? 'incident_resolved' : 'incident_created',
+        );
+      }
       await recordAudit(tx, {
         ...audit,
         action: backfill ? 'incident.backfill' : 'incident.create',
@@ -119,6 +132,7 @@ export class IncidentsService {
       });
       return incident.id;
     });
+    await this.notify.flush();
     return this.get(pageId, id);
   }
 
@@ -143,7 +157,7 @@ export class IncidentsService {
         changes = await this.withResolvedDefaults(tx, incident, input.components);
       }
 
-      await tx.incidentUpdate.create({
+      const update = await tx.incidentUpdate.create({
         data: {
           incidentId,
           status: input.status,
@@ -164,6 +178,14 @@ export class IncidentsService {
       if (!incident.backfilled) {
         await setComponentStatuses(tx, changes, { actorId: audit.actorId, at: now });
       }
+      if (input.notify && !incident.backfilled) {
+        await recordIncidentEvent(
+          tx,
+          incidentId,
+          input.status === 'resolved' ? 'incident_resolved' : 'incident_updated',
+          update.id,
+        );
+      }
       await recordAudit(tx, {
         ...audit,
         action: 'incident.update',
@@ -174,6 +196,7 @@ export class IncidentsService {
         after: { status: input.status, body: input.body, components: changes },
       });
     });
+    await this.notify.flush();
     return this.get(pageId, incidentId);
   }
 

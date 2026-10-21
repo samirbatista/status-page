@@ -5,11 +5,11 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
-> **Estado atual: F3 (autenticação corporativa e MFA).** Página pública com componentes,
-> incidentes, manutenções e barra de 90 dias; painel com papéis e auditoria; identidade
-> visual por página, domínios próprios com HTTPS automático e páginas privadas; login
-> local ou LDAP/AD com mapeamento de grupos e MFA. Notificações e monitoramento chegam
-> nas próximas fases.
+> **Estado atual: F4 (notificações).** Página pública com componentes, incidentes,
+> manutenções e barra de 90 dias; painel com papéis e auditoria; identidade visual por
+> página, domínios próprios com HTTPS automático e páginas privadas; login local ou
+> LDAP/AD com MFA; notificações para a equipe e assinantes em 8 canais. O monitoramento
+> automático chega na próxima fase.
 
 ## O que já funciona
 
@@ -41,6 +41,15 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
 - **MFA**: aplicativo autenticador (TOTP), chaves de segurança e passkeys (WebAuthn) e
   códigos de recuperação; política opcional, por papel ou para todos; redefinição pelo
   Dono ou Admin. **Conta de emergência** local que entra mesmo com o LDAP fora do ar.
+- **Notificações** (Página → Notificações; guia em [docs/NOTIFICACOES.md](docs/NOTIFICACOES.md)):
+  canais da equipe por e-mail (SMTP), Telegram, Slack, Discord, Microsoft Teams (Workflows),
+  Google Chat, WhatsApp (Cloud API) e webhook genérico assinado com HMAC; mensagens
+  personalizáveis por canal, evento e idioma; fila com novas tentativas e registro de cada
+  entrega com reenvio; lembrete 24 h antes das manutenções.
+- **Assinantes**: inscrição pública por e-mail (com **código de confirmação obrigatório**),
+  WhatsApp, Telegram, Slack, Discord, Teams e Google Chat, escolhendo componentes, eventos e
+  idioma; link de gerenciar e cancelar em toda mensagem; consentimento registrado e exclusão
+  dos dados (LGPD); importação com convite e exportação em CSV.
 - **Segurança de login**: senhas com argon2id, política de senha, bloqueio progressivo após
   5 falhas (por conta e por IP), limite de requisições, cookie `HttpOnly`/`SameSite` e
   proteção CSRF por cabeçalho.
