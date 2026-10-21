@@ -18,7 +18,6 @@ import { runDueChecks, SecretBox } from '@status-page/core';
 import { createPrismaClient } from '@status-page/db';
 import { enqueueFanout, onShutdown, QUEUES, startHealthServer } from '@status-page/runtime';
 
-
 const env = loadEnv(
   baseEnvSchema
     .extend(databaseEnvSchema.shape)

@@ -1,11 +1,12 @@
 import { getTranslations } from 'next-intl/server';
 import { IncidentEditForm, IncidentUpdateForm } from '@/components/admin/incident-actions';
+import { PostmortemEditor } from '@/components/admin/postmortem-editor';
 import { LocalTime } from '@/components/local-time';
 import { IncidentStatusBadge } from '@/components/status-badge';
 import { Card } from '@/components/ui/ui';
 import { can, getMe, pageRole } from '@/lib/admin';
 import { adminApi } from '@/lib/server-api';
-import { type AdminIncident, type Structure } from '@/lib/types';
+import { type AdminIncident, type Postmortem, type Structure } from '@/lib/types';
 
 export default async function IncidentDetailPage({
   params,
@@ -14,9 +15,13 @@ export default async function IncidentDetailPage({
 }) {
   const { locale, pageId, incidentId } = await params;
   const role = pageRole(await getMe(locale), pageId);
-  const [incident, structure] = await Promise.all([
+  const [incident, structure, { postmortem }] = await Promise.all([
     adminApi<AdminIncident>(`/pages/${pageId}/incidents/${incidentId}`, locale),
     adminApi<Structure>(`/pages/${pageId}/structure`, locale),
+    adminApi<{ postmortem: Postmortem | null }>(
+      `/pages/${pageId}/incidents/${incidentId}/postmortem`,
+      locale,
+    ),
   ]);
   const t = await getTranslations();
   const affectedIds = [
@@ -60,6 +65,16 @@ export default async function IncidentDetailPage({
               currentStatus={incident.status}
               components={structure.components}
               affectedIds={affectedIds}
+            />
+          </Card>
+        ) : null}
+        {isOperator || postmortem?.publishedAt ? (
+          <Card title={t('admin.postmortem.heading')}>
+            <PostmortemEditor
+              pageId={pageId}
+              incidentId={incidentId}
+              postmortem={postmortem}
+              canEdit={isOperator}
             />
           </Card>
         ) : null}

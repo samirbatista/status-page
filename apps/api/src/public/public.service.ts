@@ -170,7 +170,7 @@ export class PublicService {
       range,
     );
     return {
-      page: { slug: page.slug, visibility: page.visibility, timezone: page.timezone },
+      page: await this.publicPage(page, viewer),
       range,
       monitors: monitors.map((m) => ({
         id: m.id,

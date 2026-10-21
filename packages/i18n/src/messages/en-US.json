@@ -32,7 +32,8 @@
       "minor": "Minor impact",
       "major": "Major impact",
       "critical": "Critical impact"
-    }
+    },
+    "postmortem": "Postmortem"
   },
   "maintenance": {
     "window": "Window",
@@ -151,7 +152,12 @@
     "telegram_invalid_token": "Bot token rejected by Telegram.",
     "token_required": "Enter the token.",
     "csv_missing_email": "The CSV needs an email column.",
-    "csv_too_large": "Import at most 1,000 lines at a time."
+    "csv_too_large": "Import at most 1,000 lines at a time.",
+    "monitor_not_found": "Monitor not found.",
+    "inbound_source_not_found": "Integration not found.",
+    "alert_not_found": "Alert not found.",
+    "postmortem_empty": "Write the postmortem before publishing.",
+    "headers_only_http": "Headers only apply to HTTP monitors."
   },
   "admin": {
     "title": "Admin",
@@ -202,7 +208,9 @@
         "team": "Team",
         "settings": "Settings",
         "appearance": "Appearance",
-        "notifications": "Notifications"
+        "notifications": "Notifications",
+        "monitors": "Monitors",
+        "integrations": "Integrations"
       }
     },
     "overview": {
@@ -709,7 +717,9 @@
         "maintenance_reminder": "Maintenance reminder",
         "maintenance_started": "Maintenance started",
         "maintenance_updated": "Maintenance updated",
-        "maintenance_completed": "Maintenance completed"
+        "maintenance_completed": "Maintenance completed",
+        "component_status_changed": "Component status changed",
+        "postmortem_published": "Postmortem published"
       },
       "keepSecret": "Blank keeps the current value (stored encrypted).",
       "field": {
@@ -842,6 +852,203 @@
       "authTemplateHint": "Authentication category, with a copy-code button.",
       "templateLanguage": "Template language",
       "testPhone": "Test number"
+    },
+    "monitors": {
+      "heading": "Monitors",
+      "new": "New monitor",
+      "empty": "No monitors. Create one to watch a service automatically.",
+      "noComponent": "no component",
+      "paused": "Paused",
+      "state": {
+        "up": "Up",
+        "down": "Down",
+        "unknown": "Waiting"
+      },
+      "type": {
+        "http": "HTTP(S)",
+        "tcp": "TCP port",
+        "icmp": "Ping (ICMP)",
+        "dns": "DNS",
+        "ssl": "SSL certificate"
+      },
+      "form": "Monitor settings",
+      "name": "Name",
+      "typeLabel": "Type",
+      "target": {
+        "http": "URL",
+        "tcp": "Host",
+        "icmp": "Host or IP",
+        "dns": "Name to resolve",
+        "ssl": "Host"
+      },
+      "httpOptions": "HTTP options",
+      "method": "Method",
+      "expectedStatus": "Accepted codes",
+      "expectedStatusHint": "E.g.: 200-299,301",
+      "keyword": "Keyword",
+      "keywordHint": "Optional: must appear in the response.",
+      "keywordAbsent": "Fail if the keyword appears (e.g. \"error\")",
+      "followRedirects": "Follow redirects",
+      "verifyTls": "Verify the TLS certificate",
+      "requestBody": "Request body",
+      "headers": "Headers",
+      "headersKeep": "Blank keeps the current ones ({names}). One per line: Name: value",
+      "headersHint": "Optional. One per line: Name: value. Stored encrypted.",
+      "clearHeaders": "Remove saved headers",
+      "port": "Port",
+      "recordType": "Record",
+      "expected": "Expected value",
+      "expectedHint": "Optional: must appear in some answer.",
+      "dnsServer": "DNS server",
+      "dnsServerHint": "Optional: uses the system one.",
+      "minDaysLeft": "Alert with fewer than (days)",
+      "icmpHint": "Ping requires the monitor service with the NET_RAW capability (already set in compose).",
+      "interval": "Interval (s)",
+      "intervalHint": "At least {min} s.",
+      "timeout": "Timeout (s)",
+      "failureThreshold": "Failures to go down",
+      "failureThresholdHint": "Consecutive failed checks.",
+      "recoveryThreshold": "Successes to recover",
+      "recoveryThresholdHint": "Consecutive successful checks.",
+      "automation": "Automation",
+      "component": "Affected component",
+      "failureStatus": "Status on failure",
+      "mode": "Mode",
+      "modeHint": "Automatic changes the status by itself; suggestion creates an alert for the operator.",
+      "modes": {
+        "auto": "Automatic",
+        "suggest": "Suggestion"
+      },
+      "template": "Incident template",
+      "templateHint": "Optional: opens an incident when the service goes down.",
+      "noTemplate": "No incident (status only)",
+      "publicMetrics": "Show latency and uptime on the public page",
+      "enabled": "Active",
+      "testOk": "Worked: {ms} ms",
+      "testFail": "Failed: {error}",
+      "testing": "Testing…",
+      "test": "Test now",
+      "confirmDelete": "Delete this monitor? The status it applied will be restored.",
+      "noChecks": "No checks yet.",
+      "lastCheck": "Last check",
+      "settings": "Settings",
+      "recent": "Recent checks"
+    },
+    "integrations": {
+      "heading": "Integrations (inbound webhooks)",
+      "new": "New integration",
+      "intro": "Receive alerts from monitoring tools and link them to components with rules.",
+      "empty": "No integrations.",
+      "disabled": "disabled",
+      "kind": {
+        "alertmanager": "Prometheus Alertmanager",
+        "grafana": "Grafana",
+        "zabbix": "Zabbix",
+        "uptime_kuma": "Uptime Kuma",
+        "generic": "Generic JSON"
+      },
+      "modes": {
+        "auto": "Automatic",
+        "suggest": "Suggestion"
+      },
+      "rulesCount": "{count, plural, =0 {no rules} one {# rule} other {# rules}}",
+      "lastReceived": "last received",
+      "neverReceived": "nothing received yet",
+      "close": "Close",
+      "configure": "Configure",
+      "copied": "Copied",
+      "copy": "Copy",
+      "url": "Webhook URL (secret)",
+      "setup": {
+        "alertmanager": "In alertmanager.yml, create a receiver with webhook_configs pointing to this URL (send_resolved: true).",
+        "grafana": "In Alerting → Contact points, add a Webhook contact point with this URL (POST method).",
+        "zabbix": "Create a Webhook media type that sends JSON: event_id, name, host, status (PROBLEM/RESOLVED), severity, message and tags.",
+        "uptime_kuma": "In Notifications, add a Webhook notification with this URL (application/json body).",
+        "generic": "Send a JSON POST. Fields are read using the mapping paths below."
+      },
+      "hmacOn": "HMAC signature required: X-Signature header with sha256=HEX of the body.",
+      "lastResult": "Last received",
+      "lastResultSummary": "{alerts} alerts, {matched} matched a rule",
+      "firing": "firing",
+      "resolved": "resolved",
+      "outcome": {
+        "applied": "status applied",
+        "incident_opened": "incident opened",
+        "already_applied": "already applied",
+        "restored": "status restored",
+        "incident_resolved": "incident resolved",
+        "suggested": "suggestion created",
+        "suggestion_updated": "suggestion updated",
+        "suggestion_closed": "suggestion closed",
+        "recovery_suggested": "recovery suggested",
+        "noop": "no change"
+      },
+      "unmatched": "No rule",
+      "settings": "Integration settings",
+      "confirmRotate": "Generate a new URL? The current one stops working.",
+      "rotate": "Generate new URL",
+      "confirmDelete": "Delete this integration? The status it applied will be restored.",
+      "delete": "Delete",
+      "name": "Name",
+      "kindLabel": "Tool",
+      "mode": "Mode",
+      "modeHint": "Suggestion is the default: an operator confirms before the page changes.",
+      "template": "Incident template",
+      "templateHint": "Optional: opens an incident on failure.",
+      "noTemplate": "No incident (status only)",
+      "hmacSecret": "HMAC secret",
+      "hmacKeep": "Blank keeps the current secret.",
+      "hmacHint": "Optional: requires the body signature in the X-Signature header.",
+      "removeHmac": "Remove HMAC verification",
+      "mapping": "JSON mapping",
+      "mappingHint": "Dotted paths (e.g. data.alerts). Empty list path = the body is a single alert.",
+      "itemsPath": "Alert list",
+      "keyPath": "Identifier",
+      "namePath": "Name",
+      "statusPath": "Status",
+      "firingValues": "\"Firing\" values",
+      "labelsPath": "Labels",
+      "summaryPath": "Message",
+      "enabled": "Active",
+      "rules": "Rules",
+      "rulesHint": "The first matching rule sets the component and status. Field: name or label:KEY; pattern accepts * as wildcard.",
+      "noRules": "No rules: alerts are received and ignored.",
+      "matchField": "Field",
+      "pattern": "Pattern",
+      "component": "Component",
+      "status": "Status on failure",
+      "rulesSaved": "Rules saved.",
+      "addRule": "Add rule",
+      "saveRules": "Save rules"
+    },
+    "alerts": {
+      "heading": "Suggested alerts ({count})",
+      "failure": "Failure detected on {component}",
+      "recovery": "{component} is back to normal",
+      "source": {
+        "monitor": "Monitor",
+        "inbound": "Integration"
+      },
+      "occurrences": "{count} occurrences",
+      "openIncident": "Open incident from template",
+      "apply": "Apply status",
+      "restore": "Restore status",
+      "dismiss": "Dismiss"
+    },
+    "postmortem": {
+      "heading": "Postmortem",
+      "none": "No published postmortem.",
+      "publishedAt": "Published on",
+      "draftHint": "Internal draft: only shown on the public page after publishing. Supports Markdown.",
+      "write": "Write",
+      "preview": "Preview",
+      "saveToPreview": "Save to preview",
+      "body": "Postmortem text",
+      "placeholder": "## Summary\n\n## Timeline\n\n## Root cause\n\n## Actions",
+      "save": "Save draft",
+      "unpublish": "Unpublish",
+      "publish": "Publish",
+      "notify": "Notify subscribers"
     }
   },
   "denied": {
@@ -916,5 +1123,23 @@
     "inviteAccept": "Confirm subscription",
     "inviteDone": "Subscription confirmed!",
     "manageTitle": "Your subscription"
+  },
+  "metrics": {
+    "heading": "Performance",
+    "uptime": "Uptime",
+    "avgLatency": "Average latency",
+    "latency": "Latency",
+    "latencyChart": "Latency chart",
+    "uptimeBar": "Uptime per interval",
+    "noData": "No data in this period",
+    "range": {
+      "day": "24 hours",
+      "week": "7 days",
+      "month": "30 days"
+    },
+    "rangeLabel": "Period",
+    "empty": "No published metrics.",
+    "back": "Back to the status page",
+    "viewPerformance": "View performance"
   }
 }

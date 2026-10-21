@@ -5,11 +5,11 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
-> **Estado atual: F4 (notificações).** Página pública com componentes, incidentes,
+> **Estado atual: F5 (monitoramento).** Página pública com componentes, incidentes,
 > manutenções e barra de 90 dias; painel com papéis e auditoria; identidade visual por
 > página, domínios próprios com HTTPS automático e páginas privadas; login local ou
-> LDAP/AD com MFA; notificações para a equipe e assinantes em 8 canais. O monitoramento
-> automático chega na próxima fase.
+> LDAP/AD com MFA; notificações para a equipe e assinantes em 8 canais; monitores e
+> webhooks de entrada que mudam o status sozinhos, métricas públicas e postmortem.
 
 ## O que já funciona
 
@@ -50,18 +50,30 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
   WhatsApp, Telegram, Slack, Discord, Teams e Google Chat, escolhendo componentes, eventos e
   idioma; link de gerenciar e cancelar em toda mensagem; consentimento registrado e exclusão
   dos dados (LGPD); importação com convite e exportação em CSV.
+- **Monitoramento** (Página → Monitores; guia em [docs/MONITORAMENTO.md](docs/MONITORAMENTO.md)):
+  checagens HTTP(S), TCP, ping, DNS e certificado SSL com limites de falha e normalização.
+  No modo **automático** o status do componente muda sozinho (e um incidente é aberto a partir
+  de um template); no modo **sugestão** o Operador confirma. Ao normalizar, o status anterior
+  volta e o incidente é resolvido; os assinantes são avisados.
+- **Integrações** (Página → Integrações): webhooks de entrada para Prometheus Alertmanager,
+  Grafana, Zabbix, Uptime Kuma e JSON genérico, com URL secreta, HMAC opcional e regras por
+  nome ou rótulo do alerta.
+- **Métricas públicas** (`/p/<endereço>/metrics`): latência e disponibilidade em 24 h, 7 e
+  30 dias dos monitores marcados como públicos.
+- **Postmortem** em Markdown no incidente, publicado na página pública e notificado aos
+  assinantes.
 - **Segurança de login**: senhas com argon2id, política de senha, bloqueio progressivo após
   5 falhas (por conta e por IP), limite de requisições, cookie `HttpOnly`/`SameSite` e
   proteção CSRF por cabeçalho.
 
 ### Papéis
 
-| Papel    | Pode                                                                      |
-| -------- | ------------------------------------------------------------------------- |
-| Leitor   | Ver o painel da página                                                    |
-| Operador | Abrir e atualizar incidentes e manutenções; mudar o status de componentes |
-| Admin    | Tudo do Operador + componentes, templates, equipe e configurações         |
-| Dono     | Tudo em todas as páginas + usuários, páginas, LDAP e política de MFA      |
+| Papel    | Pode                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------- |
+| Leitor   | Ver o painel da página                                                                                           |
+| Operador | Abrir e atualizar incidentes e manutenções; mudar o status de componentes; aceitar alertas sugeridos; postmortem |
+| Admin    | Tudo do Operador + componentes, templates, monitores, integrações, equipe e configurações                        |
+| Dono     | Tudo em todas as páginas + usuários, páginas, LDAP e política de MFA                                             |
 
 ## Instalação on-premise (Docker)
 
@@ -106,7 +118,7 @@ docker build --secret id=extra_ca,src=/caminho/ca.crt -f docker/Dockerfile ...
 | `web`      | Next.js: página pública e painel (pt-BR, en-US, es)           |
 | `api`      | NestJS: API REST (`/api/healthz`, `/api/readyz`)              |
 | `worker`   | Filas BullMQ: notificações e tarefas agendadas                |
-| `monitor`  | Checagens de disponibilidade (a partir da F5)                 |
+| `monitor`  | Checagens dos monitores e automação de status                 |
 | `migrate`  | Migrações do banco + seed; executa e termina                  |
 | `postgres` | Banco de dados                                                |
 | `redis`    | Filas, cache e limites de requisição                          |
@@ -145,7 +157,8 @@ apps/
 packages/
   db/         schema Prisma, migrações, client e seed
   config/     validação de variáveis de ambiente e logger
-  core/       regras de domínio compartilhadas (status, manutenções, uptime, auditoria)
+  core/       regras de domínio compartilhadas (status, manutenções, uptime, auditoria,
+              checagens, automação e webhooks de entrada)
   shared/     tipos, constantes e schemas de validação (status, papéis, idiomas)
   i18n/       traduções pt-BR, en-US e es
   runtime/    healthcheck HTTP e desligamento gracioso para worker/monitor
