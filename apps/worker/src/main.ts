@@ -11,7 +11,7 @@ import {
   notifyEnvSchema,
   redisEnvSchema,
 } from '@status-page/config';
-import { runDueMaintenanceTransitions, SecretBox } from '@status-page/core';
+import { purgeMonitorResults, runDueMaintenanceTransitions, SecretBox } from '@status-page/core';
 import { createPrismaClient } from '@status-page/db';
 import { onShutdown, QUEUES, startHealthServer } from '@status-page/runtime';
 import { purgeExpiredSessions, syncAllLdapProviders } from './jobs.js';
@@ -89,6 +89,13 @@ await systemQueue.upsertJobScheduler(
   { name: 'subscriber-cleanup' },
 );
 
+// Resultados das checagens além do período exibido nas métricas.
+await systemQueue.upsertJobScheduler(
+  'monitor-results-purge',
+  { pattern: '43 3 * * *' },
+  { name: 'monitor-results-purge' },
+);
+
 const worker = new Worker(
   QUEUES.system,
   async (job) => {
@@ -124,6 +131,11 @@ const worker = new Worker(
       case 'subscriber-cleanup': {
         const removed = await cleanupSubscribers(prisma);
         if (removed) log.info({ removed }, 'inscrições não confirmadas removidas');
+        return { removed };
+      }
+      case 'monitor-results-purge': {
+        const removed = await purgeMonitorResults(prisma);
+        if (removed) log.info({ removed }, 'resultados antigos de checagens removidos');
         return { removed };
       }
       default:

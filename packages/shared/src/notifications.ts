@@ -44,6 +44,8 @@ export const NOTIFICATION_EVENT_TYPES = [
   'maintenance_started',
   'maintenance_updated',
   'maintenance_completed',
+  'component_status_changed',
+  'postmortem_published',
 ] as const;
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 
@@ -51,8 +53,9 @@ export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 export const EVENT_CATEGORIES = ['incident', 'maintenance'] as const;
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 
+/** Mudança de status pela automação e postmortem contam como "incidentes" para quem assina. */
 export function eventCategory(type: NotificationEventType): EventCategory {
-  return type.startsWith('incident') ? 'incident' : 'maintenance';
+  return type.startsWith('maintenance') ? 'maintenance' : 'incident';
 }
 
 /**
@@ -85,6 +88,7 @@ export const TEMPLATE_VARIABLES = [
   'update.body',
   'components',
   'component.name',
+  'component.status',
 ] as const;
 
 /** Variáveis usadas no template (`{{ nome }}`), na ordem em que aparecem. */

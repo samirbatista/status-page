@@ -57,3 +57,19 @@ describe('sanitizeHtml', () => {
     );
   });
 });
+
+describe('renderMarkdown', () => {
+  it('converte Markdown e remove HTML perigoso', async () => {
+    const { renderMarkdown } = await import('./sanitize.js');
+    const html = renderMarkdown(
+      '## Causa\n\n**Disco** cheio <script>alert(1)</script>\n\n- [link](javascript:alert(1))\n- [ok](https://x.dev)\n\n<img src=x onerror=alert(1)>',
+    );
+    expect(html).toContain('<h2>Causa</h2>');
+    expect(html).toContain('<strong>Disco</strong>');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('javascript:');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('href="https://x.dev"');
+    expect(html).toContain('rel="noopener noreferrer nofollow"');
+  });
+});

@@ -1,5 +1,6 @@
 export * from './auth.js';
 export * from './locales.js';
+export * from './monitoring.js';
 export * from './notifications.js';
 export * from './password.js';
 export * from './roles.js';

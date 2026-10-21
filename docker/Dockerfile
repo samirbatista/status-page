@@ -43,6 +43,12 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter="${PACKAGE}" deploy --prod --legacy --prefer-offline --store-dir /pnpm/store /out
 
 FROM ${NODE_IMAGE} AS node-app
+# Pacotes do sistema por app (o monitor precisa do iputils-ping para as checagens ICMP).
+ARG SYSTEM_PACKAGES=""
+RUN if [ -n "$SYSTEM_PACKAGES" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends $SYSTEM_PACKAGES \
+      && rm -rf /var/lib/apt/lists/*; \
+    fi
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build-node --chown=node:node /out ./

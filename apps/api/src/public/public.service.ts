@@ -4,13 +4,20 @@ import {
   computeUptime,
   localDate,
   startOfLocalDay,
+  renderMarkdown,
   type StatusPoint,
 } from '@status-page/core';
 import { type Page } from '@status-page/db';
-import { type ComponentStatus, overallStatus, roleAtLeast } from '@status-page/shared';
+import {
+  type ComponentStatus,
+  type MetricRange,
+  overallStatus,
+  roleAtLeast,
+} from '@status-page/shared';
 import { assertCanView } from '../access/page-access.js';
 import { type AuthContext, effectiveRole } from '../common/auth.types.js';
 import { PrismaService } from '../infra/prisma.service.js';
+import { metricSeries } from '../monitoring/metrics.js';
 import { PagesService } from '../pages/pages.service.js';
 import { ThemeService } from '../theme/theme.service.js';
 
@@ -114,6 +121,11 @@ export class PublicService {
       maintenances,
       pastIncidents,
       pastIncidentDays: PAST_INCIDENT_DAYS,
+      /** Há monitores com métricas públicas (exibe a seção de desempenho). */
+      hasMetrics:
+        (await this.prisma.client.monitor.count({
+          where: { pageId: page.id, publicMetrics: true, componentId: { not: null } },
+        })) > 0,
       generatedAt: now,
     };
   }
@@ -125,7 +137,49 @@ export class PublicService {
       select: this.incidentSelect(),
     });
     if (!incident) throw new NotFoundException({ message: 'incident_not_found' });
-    return { page: await this.publicPage(page, viewer), incident };
+    const postmortem = await this.prisma.client.postmortem.findFirst({
+      where: { incidentId, publishedAt: { not: null } },
+      select: { body: true, publishedAt: true },
+    });
+    return {
+      page: await this.publicPage(page, viewer),
+      incident: {
+        ...incident,
+        postmortem: postmortem
+          ? { html: renderMarkdown(postmortem.body), publishedAt: postmortem.publishedAt }
+          : null,
+      },
+    };
+  }
+
+  /** Latência e disponibilidade dos monitores marcados como públicos. */
+  async metrics(slug: string, range: MetricRange, viewer: Viewer) {
+    const page = await this.findPage(slug, viewer);
+    const monitors = await this.prisma.client.monitor.findMany({
+      where: {
+        pageId: page.id,
+        publicMetrics: true,
+        component: { pages: { some: { pageId: page.id } } },
+      },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, type: true, component: { select: { id: true, name: true } } },
+    });
+    const series = await metricSeries(
+      this.prisma.client,
+      monitors.map((m) => m.id),
+      range,
+    );
+    return {
+      page: { slug: page.slug, visibility: page.visibility, timezone: page.timezone },
+      range,
+      monitors: monitors.map((m) => ({
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        component: m.component,
+        ...series.get(m.id)!,
+      })),
+    };
   }
 
   async maintenance(slug: string, maintenanceId: string, viewer: Viewer) {

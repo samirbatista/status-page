@@ -75,6 +75,7 @@ export function templateVars(
       '',
     components: components.join(', ') || '—',
     'component.name': components[0] ?? '',
+    'component.status': payload.components[0]?.status ? t.status[payload.components[0].status] : '',
   };
 }
 
@@ -85,6 +86,14 @@ const RESOLVED_COLOR = '#16a34a';
 function colorFor(payload: EventPayload): string {
   if (payload.type === 'incident_resolved' || payload.type === 'maintenance_completed') {
     return RESOLVED_COLOR;
+  }
+  if (payload.type === 'component_status_changed') {
+    const status = payload.components[0]?.status;
+    return status === 'operational'
+      ? RESOLVED_COLOR
+      : status === 'major_outage'
+        ? IMPACT_COLORS.critical
+        : IMPACT_COLORS.major;
   }
   if (payload.incident) return IMPACT_COLORS[payload.incident.impact];
   return MAINTENANCE_COLOR;
@@ -119,7 +128,9 @@ export function renderMessage(payload: EventPayload, options: RenderOptions): Re
       value: `${vars['maintenance.start']} – ${vars['maintenance.end']}`,
     });
   }
-  if (payload.components.length > 0) {
+  if (payload.type === 'component_status_changed' && payload.components[0]?.status) {
+    facts.push({ label: s.facts.status, value: vars['component.status']! });
+  } else if (payload.components.length > 0) {
     facts.push({ label: s.facts.components, value: vars.components! });
   }
 
@@ -128,7 +139,11 @@ export function renderMessage(payload: EventPayload, options: RenderOptions): Re
     event: payload.type,
     subject,
     text,
-    title: payload.incident?.title ?? payload.maintenance?.title ?? payload.page.name,
+    title:
+      payload.incident?.title ??
+      payload.maintenance?.title ??
+      (payload.type === 'component_status_changed' ? payload.components[0]?.name : undefined) ??
+      payload.page.name,
     color: colorFor(payload),
     facts,
     links: options.links,

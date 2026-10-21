@@ -14,8 +14,10 @@
   },
   "dependencies": {
     "@status-page/config": "workspace:*",
+    "@status-page/core": "workspace:*",
     "@status-page/db": "workspace:*",
     "@status-page/runtime": "workspace:*",
+    "bullmq": "^6.3.12",
     "ioredis": "^6.0.0",
     "zod": "^4.6.5"
   },

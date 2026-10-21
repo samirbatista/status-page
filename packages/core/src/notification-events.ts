@@ -108,3 +108,51 @@ async function createEvent(
   });
   return event.id;
 }
+
+/** Status de componente alterado pela automação, sem incidente aberto. */
+export async function recordComponentEvent(
+  db: Db,
+  pageId: string,
+  componentId: string,
+  body: string,
+): Promise<string> {
+  const component = await db.component.findUniqueOrThrow({
+    where: { id: componentId },
+    select: { id: true, name: true, status: true },
+  });
+  const payload: NotificationEventPayload = {
+    type: 'component_status_changed',
+    page: await pageInfo(db, pageId),
+    update: { body },
+    components: [component],
+  };
+  return createEvent(db, pageId, payload, {});
+}
+
+/** Postmortem publicado: vai para quem assina incidentes. */
+export async function recordPostmortemEvent(db: Db, incidentId: string): Promise<string> {
+  const incident = await db.incident.findUniqueOrThrow({
+    where: { id: incidentId },
+    include: {
+      updates: {
+        include: { components: { include: { component: { select: { id: true, name: true } } } } },
+      },
+    },
+  });
+  const components = new Map<string, { id: string; name: string }>();
+  for (const u of incident.updates) {
+    for (const c of u.components) components.set(c.component.id, c.component);
+  }
+  const payload: NotificationEventPayload = {
+    type: 'postmortem_published',
+    page: await pageInfo(db, incident.pageId),
+    incident: {
+      id: incident.id,
+      title: incident.title,
+      status: incident.status,
+      impact: incident.impact,
+    },
+    components: [...components.values()],
+  };
+  return createEvent(db, incident.pageId, payload, { incidentId });
+}
