@@ -112,6 +112,9 @@ jobs:
           curl -fsS http://localhost/en-US | grep 'All systems operational'
           curl -fsS http://localhost/es | grep 'Todos los sistemas operativos'
           curl -fsS http://localhost/api/public/pages/demo | grep '"slug":"demo"'
+          # F4: opções de inscrição pública (webhooks disponíveis mesmo sem provedores).
+          curl -fsS http://localhost/api/public/pages/demo/subscribe | grep '"slack"'
+          curl -fsS -o /dev/null http://localhost/p/demo/subscribe
           # Login pelo Caddy: cookie de sessão + rota autenticada.
           curl -fsS -c cookies.txt -H 'X-Requested-With: status-page' -H 'Content-Type: application/json' \
             -d "{\"email\":\"admin@example.com\",\"password\":\"$OWNER_PASSWORD\"}" http://localhost/api/auth/login

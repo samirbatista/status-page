@@ -5,6 +5,7 @@ export * from './ldap.js';
 export * from './ldap-sync.js';
 export * from './maintenance.js';
 export * from './network.js';
+export * from './notification-events.js';
 export * from './sanitize.js';
 export * from './secret-box.js';
 export * from './time-zone.js';

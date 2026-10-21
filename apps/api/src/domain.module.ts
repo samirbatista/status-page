@@ -13,7 +13,15 @@ import { IncidentsController } from './incidents/incidents.controller.js';
 import { IncidentsService } from './incidents/incidents.service.js';
 import { MaintenancesController } from './maintenances/maintenances.controller.js';
 import { MaintenancesService } from './maintenances/maintenances.service.js';
+import {
+  NotificationsController,
+  ProviderSettingsController,
+} from './notifications/notifications.controller.js';
+import { ChannelsService } from './notifications/channels.service.js';
+import { ProviderSettingsService } from './notifications/provider-settings.service.js';
 import { PagesController } from './pages/pages.controller.js';
+import { SubscribersService } from './subscribers/subscribers.service.js';
+import { SubscriptionsController } from './subscribers/subscriptions.controller.js';
 import { PagesService } from './pages/pages.service.js';
 import { PublicController } from './public/public.controller.js';
 import { PublicService } from './public/public.service.js';
@@ -29,8 +37,11 @@ import { UsersService } from './users/users.service.js';
     DomainsController,
     IncidentsController,
     MaintenancesController,
+    NotificationsController,
     PagesController,
+    ProviderSettingsController,
     PublicController,
+    SubscriptionsController,
     TemplatesController,
     ThemeController,
     UploadsController,
@@ -38,12 +49,15 @@ import { UsersService } from './users/users.service.js';
   ],
   providers: [
     AuditService,
+    ChannelsService,
     ComponentsService,
     DomainsService,
     IncidentsService,
     MaintenancesService,
     PagesService,
+    ProviderSettingsService,
     PublicService,
+    SubscribersService,
     TemplatesService,
     ThemeService,
     UploadsService,

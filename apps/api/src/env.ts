@@ -4,6 +4,7 @@ import {
   baseEnvSchema,
   databaseEnvSchema,
   loadEnv,
+  notifyEnvSchema,
   redisEnvSchema,
 } from '@status-page/config';
 
@@ -11,6 +12,7 @@ export const apiEnvSchema = baseEnvSchema
   .extend(databaseEnvSchema.shape)
   .extend(redisEnvSchema.shape)
   .extend(appSecretEnvSchema.shape)
+  .extend(notifyEnvSchema.shape)
   .extend({
     API_PORT: z.coerce.number().int().positive().default(3001),
     /** Sessão expira após este tempo sem uso. */

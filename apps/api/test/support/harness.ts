@@ -31,8 +31,8 @@ export function client(app: INestApplication, agent = request.agent(app.getHttpS
   };
 }
 
-export async function createHarness(): Promise<Harness> {
-  const env = testEnv();
+export async function createHarness(overrides: Partial<NodeJS.ProcessEnv> = {}): Promise<Harness> {
+  const env = testEnv(overrides);
   const app = await createApp(env);
   await app.init();
   const prisma = createPrismaClient(env.DATABASE_URL);

@@ -3,10 +3,12 @@ import {
   type AuditContext,
   completeMaintenance,
   recordAudit,
+  recordMaintenanceEvent,
   startMaintenance,
 } from '@status-page/core';
 import { type MaintenanceCreateInput, type MaintenanceStatus } from '@status-page/shared';
 import { assertComponentsInPage } from '../common/page-guards.js';
+import { NotifyService } from '../infra/notify.service.js';
 import { PrismaService } from '../infra/prisma.service.js';
 
 interface MaintenanceEditInput {
@@ -29,7 +31,10 @@ const DETAIL_INCLUDE = {
 
 @Injectable()
 export class MaintenancesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+  ) {}
 
   async list(
     pageId: string,
@@ -89,12 +94,16 @@ export class MaintenancesService {
         pageId,
         after: { ...maintenance, body: input.body, componentIds: input.componentIds },
       });
+      if (input.notify) {
+        await recordMaintenanceEvent(tx, maintenance.id, 'maintenance_scheduled', input.body);
+      }
       // Janela já iniciada: começa agora, sem esperar o worker.
       if (input.autoStart && input.scheduledStart <= new Date()) {
         await startMaintenance(tx, maintenance.id, { actorId: audit.actorId });
       }
       return maintenance.id;
     });
+    await this.notify.flush();
     return this.get(pageId, id);
   }
 
@@ -174,6 +183,9 @@ export class MaintenancesService {
           createdById: audit.actorId ?? null,
         },
       });
+      if (input.notify) {
+        await recordMaintenanceEvent(tx, maintenanceId, 'maintenance_updated', input.body);
+      }
       await recordAudit(tx, {
         ...audit,
         action: 'maintenance.update',
@@ -183,6 +195,7 @@ export class MaintenancesService {
         after: { body: input.body },
       });
     });
+    await this.notify.flush();
     return this.get(pageId, maintenanceId);
   }
 

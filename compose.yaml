@@ -14,6 +14,8 @@ x-backend-env: &backend-env
   LOG_LEVEL: ${LOG_LEVEL:-info}
   DATABASE_URL: postgresql://status:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/status
   REDIS_URL: redis://redis:6379
+  # Endereço público do site: links nas notificações (gerenciar, cancelar, ver incidente).
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
 
 services:
   postgres:
@@ -103,6 +105,7 @@ services:
       # Decifra a senha do bind LDAP na sincronização periódica.
       APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env}
       LDAP_SYNC_MINUTES: ${LDAP_SYNC_MINUTES:-15}
+      NOTIFY_RATE_PER_SECOND: ${NOTIFY_RATE_PER_SECOND:-20}
     healthcheck:
       <<: *node-healthcheck
       test:

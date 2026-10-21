@@ -16,7 +16,9 @@
     "@status-page/config": "workspace:*",
     "@status-page/core": "workspace:*",
     "@status-page/db": "workspace:*",
+    "@status-page/notifiers": "workspace:*",
     "@status-page/runtime": "workspace:*",
+    "@status-page/shared": "workspace:*",
     "bullmq": "^6.3.12",
     "ioredis": "^6.0.0",
     "zod": "^4.6.5"

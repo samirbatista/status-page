@@ -1,0 +1,36 @@
+{
+  "name": "@status-page/notifiers",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@status-page/core": "workspace:*",
+    "@status-page/db": "workspace:*",
+    "@status-page/i18n": "workspace:*",
+    "@status-page/runtime": "workspace:*",
+    "@status-page/shared": "workspace:*",
+    "nodemailer": "^10.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "vitest": "^5"
+  }
+}
