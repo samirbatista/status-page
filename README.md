@@ -5,10 +5,11 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
-> **Estado atual: F2 (personalização e acesso).** Página pública com componentes,
-> incidentes, manutenções e barra de 90 dias; painel com login local, papéis e auditoria;
-> identidade visual por página, domínios próprios com HTTPS automático e páginas privadas.
-> LDAP/MFA, notificações e monitoramento chegam nas próximas fases.
+> **Estado atual: F3 (autenticação corporativa e MFA).** Página pública com componentes,
+> incidentes, manutenções e barra de 90 dias; painel com papéis e auditoria; identidade
+> visual por página, domínios próprios com HTTPS automático e páginas privadas; login
+> local ou LDAP/AD com mapeamento de grupos e MFA. Notificações e monitoramento chegam
+> nas próximas fases.
 
 ## O que já funciona
 
@@ -32,6 +33,14 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
   verificados recebem HTTPS automático no primeiro acesso.
 - **Páginas privadas**: acesso por login (usuários com papel na página), por redes liberadas
   (CIDR) ou pela combinação das duas.
+- **Login corporativo** (Painel → Autenticação): provedores Active Directory e OpenLDAP
+  (LDAPS ou StartTLS, CA própria), testes de conexão e de login, usuário criado no
+  primeiro login, grupos (inclusive aninhados) mapeados para papéis e sincronização
+  periódica: conta desativada no diretório perde o acesso. Guia em
+  [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md).
+- **MFA**: aplicativo autenticador (TOTP), chaves de segurança e passkeys (WebAuthn) e
+  códigos de recuperação; política opcional, por papel ou para todos; redefinição pelo
+  Dono ou Admin. **Conta de emergência** local que entra mesmo com o LDAP fora do ar.
 - **Segurança de login**: senhas com argon2id, política de senha, bloqueio progressivo após
   5 falhas (por conta e por IP), limite de requisições, cookie `HttpOnly`/`SameSite` e
   proteção CSRF por cabeçalho.
@@ -43,7 +52,7 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
 | Leitor   | Ver o painel da página                                                    |
 | Operador | Abrir e atualizar incidentes e manutenções; mudar o status de componentes |
 | Admin    | Tudo do Operador + componentes, templates, equipe e configurações         |
-| Dono     | Tudo em todas as páginas + usuários, criação e exclusão de páginas        |
+| Dono     | Tudo em todas as páginas + usuários, páginas, LDAP e política de MFA      |
 
 ## Instalação on-premise (Docker)
 

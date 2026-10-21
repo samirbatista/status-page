@@ -13,3 +13,12 @@ export const RequirePageRole = (role: Exclude<Role, 'owner'>) => SetMetadata(PAG
 
 /** Exige que o usuário seja Dono da instalação. */
 export const RequireOwner = () => SetMetadata(OWNER_KEY, true);
+
+export const MFA_STAGE_KEY = 'auth:mfaStage';
+
+/**
+ * Rota acessível também com o segundo fator pendente (`pending`) ou com o
+ * cadastro de MFA obrigatório ainda por fazer (`enroll`).
+ */
+export const AllowMfaStage = (...stages: ('pending' | 'enroll')[]) =>
+  SetMetadata(MFA_STAGE_KEY, stages);

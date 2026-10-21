@@ -58,6 +58,30 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  ldap:
+    name: Login LDAP e AD contra servidores reais
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Sobe OpenLDAP e Samba AD
+        run: timeout 600 docker/ldap-test/start.sh
+      - name: Testes de integração LDAP
+        env:
+          TEST_OPENLDAP: localhost:1389
+          TEST_SAMBA_AD: localhost:2636
+        run: |
+          pnpm turbo run build --filter=@status-page/core
+          pnpm --filter @status-page/core exec vitest run src/ldap.integration.test.ts
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker logs sp-openldap; docker logs sp-samba | tail -50
+
   docker:
     name: Imagens Docker e smoke test
     runs-on: ubuntu-latest

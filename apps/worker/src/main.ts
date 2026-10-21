@@ -2,22 +2,28 @@ import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
 import {
+  appSecretEnvSchema,
   baseEnvSchema,
   createLogger,
   databaseEnvSchema,
   loadEnv,
   redisEnvSchema,
 } from '@status-page/config';
-import { runDueMaintenanceTransitions } from '@status-page/core';
+import { runDueMaintenanceTransitions, SecretBox } from '@status-page/core';
 import { createPrismaClient } from '@status-page/db';
 import { onShutdown, QUEUES, startHealthServer } from '@status-page/runtime';
-import { purgeExpiredSessions } from './jobs.js';
+import { purgeExpiredSessions, syncAllLdapProviders } from './jobs.js';
 
 const env = loadEnv(
   baseEnvSchema
     .extend(databaseEnvSchema.shape)
     .extend(redisEnvSchema.shape)
-    .extend({ HEALTH_PORT: z.coerce.number().int().positive().default(3002) }),
+    .extend(appSecretEnvSchema.shape)
+    .extend({
+      HEALTH_PORT: z.coerce.number().int().positive().default(3002),
+      /** Intervalo da sincronização com os diretórios LDAP (0 desliga). */
+      LDAP_SYNC_MINUTES: z.coerce.number().int().min(0).max(1440).default(15),
+    }),
 );
 
 const log = createLogger('worker', env.LOG_LEVEL);
@@ -26,6 +32,7 @@ const prisma = createPrismaClient(env.DATABASE_URL);
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 connection.on('error', (err) => log.warn({ err: err.message }, 'falha na conexão com o Redis'));
 
+const secrets = new SecretBox(env.APP_SECRET);
 const systemQueue = new Queue(QUEUES.system, { connection });
 await systemQueue.upsertJobScheduler(
   'purge-expired-sessions',
@@ -38,6 +45,17 @@ await systemQueue.upsertJobScheduler(
   { every: 60_000 },
   { name: 'maintenance-transitions' },
 );
+
+// Usuários desativados ou removidos do diretório perdem o acesso; grupos e papéis são atualizados.
+if (env.LDAP_SYNC_MINUTES > 0) {
+  await systemQueue.upsertJobScheduler(
+    'ldap-sync',
+    { every: env.LDAP_SYNC_MINUTES * 60_000 },
+    { name: 'ldap-sync' },
+  );
+} else {
+  await systemQueue.removeJobScheduler('ldap-sync');
+}
 
 const worker = new Worker(
   QUEUES.system,
@@ -54,6 +72,14 @@ const worker = new Worker(
           log.info(result, 'manutenções atualizadas automaticamente');
         }
         return result;
+      }
+      case 'ldap-sync': {
+        const results = await syncAllLdapProviders(prisma, secrets);
+        for (const r of results) {
+          if (r.error) log.warn(r, 'sincronização LDAP interrompida');
+          else if (r.disabled > 0) log.info(r, 'contas desativadas no diretório');
+        }
+        return results;
       }
       default:
         throw new Error(`job desconhecido: ${job.name}`);

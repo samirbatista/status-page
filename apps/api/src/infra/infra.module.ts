@@ -1,10 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service.js';
 import { RedisService } from './redis.service.js';
+import { SecretsService } from './secrets.service.js';
 
 @Global()
 @Module({
-  providers: [PrismaService, RedisService],
-  exports: [PrismaService, RedisService],
+  providers: [PrismaService, RedisService, SecretsService],
+  exports: [PrismaService, RedisService, SecretsService],
 })
 export class InfraModule {}

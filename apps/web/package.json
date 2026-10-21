@@ -13,6 +13,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^14.0.0",
     "@status-page/i18n": "workspace:*",
     "@status-page/shared": "workspace:*",
     "next": "^16.4.0",

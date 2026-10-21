@@ -34,14 +34,28 @@ export function UsersManager({
                     {u.isOwner ? (
                       <span className="ml-2 text-xs text-brand">{t('page.role.owner')}</span>
                     ) : null}
+                    {u.isBreakGlass ? (
+                      <span className="ml-2 text-xs text-brand">{t('users.breakGlass')}</span>
+                    ) : null}
                     {u.disabledAt ? (
                       <span className="ml-2 text-xs text-status-major_outage">
                         {t('users.disabled')}
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-sm text-[var(--muted)]">
-                    {u.email} · {u.identities.map((i) => i.provider).join(', ')}
+                  <p className="text-sm text-[var(--muted)]">{u.email}</p>
+                  <p className="text-xs text-[var(--muted)]">
+                    {u.identities
+                      .map((i) =>
+                        i.provider === 'ldap'
+                          ? `${i.ldapProvider?.name ?? 'LDAP'}${i.username ? ` (${i.username})` : ''}${
+                              i.disabledAt ? ` — ${t('users.directoryDisabled')}` : ''
+                            }`
+                          : t('profile.provider.local'),
+                      )
+                      .join(' · ')}
+                    {' · '}
+                    {u.mfa.totp || u.mfa.webauthn > 0 ? t('users.mfaOn') : t('users.mfaOff')}
                   </p>
                   <p className="text-xs text-[var(--muted)]">
                     {t('users.lastLogin')}:{' '}
@@ -52,54 +66,92 @@ export function UsersManager({
                       {u.pageRoles
                         .map(
                           (r) =>
-                            `${pageName.get(r.pageId) ?? r.pageId}: ${t(`page.role.${r.role}`)}`,
+                            `${pageName.get(r.pageId) ?? r.pageId}: ${t(`page.role.${r.role}`)}${
+                              r.manual ? '' : ` (${t('users.viaGroup')})`
+                            }`,
                         )
                         .join(' · ')}
                     </p>
                   ) : null}
                 </div>
-                {u.id !== currentUserId ? (
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {u.isOwner && u.identities.some((i) => i.provider === 'local') ? (
                     <Button
                       variant="secondary"
-                      disabled={pending}
-                      onClick={() =>
-                        run(() =>
-                          api(`/users/${u.id}`, { method: 'PATCH', body: { isOwner: !u.isOwner } }),
-                        )
-                      }
-                    >
-                      {u.isOwner ? t('users.removeOwner') : t('users.makeOwner')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={pending}
-                      onClick={() => {
-                        const password = window.prompt(t('users.newPasswordPrompt'));
-                        if (password)
-                          void run(() =>
-                            api(`/users/${u.id}/password`, { method: 'POST', body: { password } }),
-                          );
-                      }}
-                    >
-                      {t('users.resetPassword')}
-                    </Button>
-                    <Button
-                      variant={u.disabledAt ? 'secondary' : 'danger'}
                       disabled={pending}
                       onClick={() =>
                         run(() =>
                           api(`/users/${u.id}`, {
                             method: 'PATCH',
-                            body: { disabled: !u.disabledAt },
+                            body: { breakGlass: !u.isBreakGlass },
                           }),
                         )
                       }
                     >
-                      {u.disabledAt ? t('users.enable') : t('users.disable')}
+                      {u.isBreakGlass ? t('users.unsetBreakGlass') : t('users.setBreakGlass')}
                     </Button>
-                  </div>
-                ) : null}
+                  ) : null}
+                  {u.id !== currentUserId ? (
+                    <>
+                      <Button
+                        variant="secondary"
+                        disabled={pending}
+                        onClick={() =>
+                          run(() =>
+                            api(`/users/${u.id}`, {
+                              method: 'PATCH',
+                              body: { isOwner: !u.isOwner },
+                            }),
+                          )
+                        }
+                      >
+                        {u.isOwner ? t('users.removeOwner') : t('users.makeOwner')}
+                      </Button>
+                      {u.mfa.totp || u.mfa.webauthn > 0 ? (
+                        <Button
+                          variant="secondary"
+                          disabled={pending}
+                          onClick={() => {
+                            if (window.confirm(t('users.resetMfaConfirm', { name: u.name })))
+                              void run(() => api(`/users/${u.id}/mfa/reset`, { method: 'POST' }));
+                          }}
+                        >
+                          {t('users.resetMfa')}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="secondary"
+                        disabled={pending}
+                        onClick={() => {
+                          const password = window.prompt(t('users.newPasswordPrompt'));
+                          if (password)
+                            void run(() =>
+                              api(`/users/${u.id}/password`, {
+                                method: 'POST',
+                                body: { password },
+                              }),
+                            );
+                        }}
+                      >
+                        {t('users.resetPassword')}
+                      </Button>
+                      <Button
+                        variant={u.disabledAt ? 'secondary' : 'danger'}
+                        disabled={pending}
+                        onClick={() =>
+                          run(() =>
+                            api(`/users/${u.id}`, {
+                              method: 'PATCH',
+                              body: { disabled: !u.disabledAt },
+                            }),
+                          )
+                        }
+                      >
+                        {u.disabledAt ? t('users.enable') : t('users.disable')}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
               </div>
             </li>
           ))}

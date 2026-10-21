@@ -64,12 +64,22 @@ export async function publicApi<T>(
   }
 }
 
+/** Sessão aberta com a senha, mas que ainda precisa do segundo fator (ou cadastrá-lo). */
+export function needsMfa(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 401 &&
+    (error.code === 'mfa_required' || error.code === 'mfa_enrollment_required')
+  );
+}
+
 /** Para o painel: sem sessão vai para o login; sem permissão vira 404. */
 export async function adminApi<T>(path: string, locale: string): Promise<T> {
   try {
     return await serverApi<T>(path);
   } catch (error) {
     if (error instanceof ApiError) {
+      if (needsMfa(error)) redirect(`/${locale}/admin/mfa`);
       if (error.status === 401) redirect(`/${locale}/admin/login`);
       if (error.status === 403 || error.status === 404) notFound();
     }
