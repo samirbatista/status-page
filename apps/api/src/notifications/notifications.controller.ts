@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -9,7 +8,6 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import {
@@ -24,7 +22,7 @@ import { z } from 'zod';
 import { RequireOwner, RequirePageRole } from '../common/decorators.js';
 import { listQuerySchema } from '../common/list-query.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { SubscribersService } from '../subscribers/subscribers.service.js';
 import { ChannelsService } from './channels.service.js';
 import { ProviderSettingsService } from './provider-settings.service.js';
@@ -60,7 +58,7 @@ export class NotificationsController {
   @RequirePageRole('admin')
   createChannel(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(channelCreateSchema)) body: z.infer<typeof channelCreateSchema>,
+    @ZodBody(channelCreateSchema) body: z.infer<typeof channelCreateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.channels.create(pageId, body, audit);
@@ -71,7 +69,7 @@ export class NotificationsController {
   updateChannel(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('channelId', ParseUUIDPipe) channelId: string,
-    @Body(new ZodPipe(channelUpdateSchema)) body: z.infer<typeof channelUpdateSchema>,
+    @ZodBody(channelUpdateSchema) body: z.infer<typeof channelUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.channels.update(pageId, channelId, body, audit);
@@ -110,7 +108,7 @@ export class NotificationsController {
   @RequirePageRole('admin')
   upsertTemplate(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(templateUpsertSchema)) body: z.infer<typeof templateUpsertSchema>,
+    @ZodBody(templateUpsertSchema) body: z.infer<typeof templateUpsertSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.channels.upsertTemplate(pageId, body, audit);
@@ -121,7 +119,7 @@ export class NotificationsController {
   @HttpCode(200)
   preview(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(templateUpsertSchema)) body: z.infer<typeof templateUpsertSchema>,
+    @ZodBody(templateUpsertSchema) body: z.infer<typeof templateUpsertSchema>,
   ) {
     return this.channels.preview(pageId, body);
   }
@@ -143,7 +141,7 @@ export class NotificationsController {
   @RequirePageRole('operator')
   deliveries(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Query(new ZodPipe(deliveriesQuery)) query: z.infer<typeof deliveriesQuery>,
+    @ZodQuery(deliveriesQuery) query: z.infer<typeof deliveriesQuery>,
   ) {
     return this.channels.deliveries(pageId, query);
   }
@@ -165,7 +163,7 @@ export class NotificationsController {
   @RequirePageRole('admin')
   listSubscribers(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Query(new ZodPipe(subscribersQuery)) query: z.infer<typeof subscribersQuery>,
+    @ZodQuery(subscribersQuery) query: z.infer<typeof subscribersQuery>,
   ) {
     return this.subscribers.list(pageId, query);
   }
@@ -184,7 +182,7 @@ export class NotificationsController {
   @HttpCode(200)
   importSubscribers(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(importBody)) body: z.infer<typeof importBody>,
+    @ZodBody(importBody) body: z.infer<typeof importBody>,
     @Audit() audit: AuditContext,
   ) {
     return this.subscribers.importCsv(pageId, body.csv, audit);
@@ -215,7 +213,7 @@ export class ProviderSettingsController {
 
   @Put('smtp')
   smtp(
-    @Body(new ZodPipe(smtpSettingsSchema)) body: z.infer<typeof smtpSettingsSchema>,
+    @ZodBody(smtpSettingsSchema) body: z.infer<typeof smtpSettingsSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.settings.saveSmtp(body, audit);
@@ -223,7 +221,7 @@ export class ProviderSettingsController {
 
   @Put('telegram')
   telegram(
-    @Body(new ZodPipe(telegramSettingsSchema)) body: z.infer<typeof telegramSettingsSchema>,
+    @ZodBody(telegramSettingsSchema) body: z.infer<typeof telegramSettingsSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.settings.saveTelegram(body, audit);
@@ -231,7 +229,7 @@ export class ProviderSettingsController {
 
   @Put('whatsapp')
   whatsapp(
-    @Body(new ZodPipe(whatsappSettingsSchema)) body: z.infer<typeof whatsappSettingsSchema>,
+    @ZodBody(whatsappSettingsSchema) body: z.infer<typeof whatsappSettingsSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.settings.saveWhatsapp(body, audit);
@@ -239,13 +237,13 @@ export class ProviderSettingsController {
 
   @Post('smtp/test')
   @HttpCode(200)
-  testSmtp(@Body(new ZodPipe(emailBody)) body: z.infer<typeof emailBody>) {
+  testSmtp(@ZodBody(emailBody) body: z.infer<typeof emailBody>) {
     return this.settings.testSmtp(body.to);
   }
 
   @Post('whatsapp/test')
   @HttpCode(200)
-  testWhatsapp(@Body(new ZodPipe(phoneBody)) body: z.infer<typeof phoneBody>) {
+  testWhatsapp(@ZodBody(phoneBody) body: z.infer<typeof phoneBody>) {
     return this.settings.testWhatsapp(body.phone);
   }
 }

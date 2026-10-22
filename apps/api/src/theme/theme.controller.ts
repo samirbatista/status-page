@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import { themeSchema, type Theme } from '@status-page/shared';
 import { RequirePageRole } from '../common/decorators.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { ThemeService } from './theme.service.js';
 
 @Controller('pages/:pageId/theme')
@@ -20,7 +20,7 @@ export class ThemeController {
   @RequirePageRole('admin')
   saveDraft(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(themeSchema)) body: Theme,
+    @ZodBody(themeSchema) body: Theme,
     @Audit() audit: AuditContext,
   ) {
     return this.themes.saveDraft(pageId, body, audit);

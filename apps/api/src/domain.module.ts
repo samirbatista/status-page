@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AuditController } from './audit/audit.controller.js';
 import { AuditService } from './audit/audit.service.js';
+import { ConfigExportService } from './config-transfer/config-export.service.js';
+import { ConfigImportService } from './config-transfer/config-import.service.js';
+import { ConfigTransferController } from './config-transfer/config-transfer.controller.js';
 import { DomainsController } from './domains/domains.controller.js';
 import { DomainsService } from './domains/domains.service.js';
 import { ThemeController } from './theme/theme.controller.js';
@@ -34,6 +37,8 @@ import { PagesController } from './pages/pages.controller.js';
 import { SubscribersService } from './subscribers/subscribers.service.js';
 import { SubscriptionsController } from './subscribers/subscriptions.controller.js';
 import { PagesService } from './pages/pages.service.js';
+import { DistributionController } from './public/distribution.controller.js';
+import { DistributionService } from './public/distribution.service.js';
 import { PublicController } from './public/public.controller.js';
 import { PublicService } from './public/public.service.js';
 import { TemplatesController } from './templates/templates.controller.js';
@@ -45,6 +50,8 @@ import { UsersService } from './users/users.service.js';
   controllers: [
     AlertsController,
     AuditController,
+    ConfigTransferController,
+    DistributionController,
     ComponentsController,
     DomainsController,
     InboundHooksController,
@@ -66,6 +73,9 @@ import { UsersService } from './users/users.service.js';
   providers: [
     AlertsService,
     AuditService,
+    ConfigExportService,
+    ConfigImportService,
+    DistributionService,
     ChannelsService,
     ComponentsService,
     DomainsService,

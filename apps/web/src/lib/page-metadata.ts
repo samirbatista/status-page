@@ -14,6 +14,13 @@ export function pageMetadata(page: PublicPage, title?: string): Metadata {
       description: page.description ?? undefined,
       images: theme.ogImageId ? [uploadUrl(theme.ogImageId)] : undefined,
     },
+    // Feeds RSS/Atom descobertos pelos leitores de feed.
+    alternates: {
+      types: {
+        'application/atom+xml': `/api/public/pages/${page.slug}/feed.atom`,
+        'application/rss+xml': `/api/public/pages/${page.slug}/feed.rss`,
+      },
+    },
     // Páginas privadas e pré-visualizações não devem ser indexadas.
     robots:
       page.visibility === 'private' || page.preview ? { index: false, follow: false } : undefined,

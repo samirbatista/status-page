@@ -22,3 +22,8 @@ export const MFA_STAGE_KEY = 'auth:mfaStage';
  */
 export const AllowMfaStage = (...stages: ('pending' | 'enroll')[]) =>
   SetMetadata(MFA_STAGE_KEY, stages);
+
+export const SESSION_ONLY_KEY = 'auth:sessionOnly';
+
+/** Rota que exige sessão do painel: tokens de API não a alcançam. */
+export const SessionOnly = () => SetMetadata(SESSION_ONLY_KEY, true);

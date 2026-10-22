@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  NotFoundException,
-  Param,
-  ParseUUIDPipe,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, ParseUUIDPipe, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { METRIC_RANGES } from '@status-page/shared';
 import { z } from 'zod';
@@ -15,7 +6,7 @@ import { cacheControlFor } from '../access/page-access.js';
 import { type AuthContext } from '../common/auth.types.js';
 import { Public } from '../common/decorators.js';
 import { CurrentAuth } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodQuery } from '../common/zod.pipe.js';
 import { PublicService, type Viewer } from './public.service.js';
 
 const historyQuery = z.object({ month: z.string() });
@@ -38,7 +29,7 @@ export class PublicController {
   @Get('pages/:slug')
   async summary(
     @Param('slug') slug: string,
-    @Query(new ZodPipe(summaryQuery)) query: z.infer<typeof summaryQuery>,
+    @ZodQuery(summaryQuery) query: z.infer<typeof summaryQuery>,
     @CurrentAuth() auth: AuthContext | undefined,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -55,7 +46,7 @@ export class PublicController {
   @Get('pages/:slug/history')
   async history(
     @Param('slug') slug: string,
-    @Query(new ZodPipe(historyQuery)) query: z.infer<typeof historyQuery>,
+    @ZodQuery(historyQuery) query: z.infer<typeof historyQuery>,
     @CurrentAuth() auth: AuthContext | undefined,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -68,7 +59,7 @@ export class PublicController {
   @Get('pages/:slug/metrics')
   async metrics(
     @Param('slug') slug: string,
-    @Query(new ZodPipe(metricsQuery)) query: z.infer<typeof metricsQuery>,
+    @ZodQuery(metricsQuery) query: z.infer<typeof metricsQuery>,
     @CurrentAuth() auth: AuthContext | undefined,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

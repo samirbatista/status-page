@@ -22,6 +22,8 @@ export interface AuthContext {
   mfa: MfaStage;
   /** Papel do usuário em cada página (pageId → papel). */
   pageRoles: Map<string, Role>;
+  /** Requisição autenticada por token de API (age em nome de quem o criou). */
+  apiToken?: { id: string; name: string; prefix: string };
 }
 
 /** Papel efetivo na página: o Dono tem acesso total a todas. */

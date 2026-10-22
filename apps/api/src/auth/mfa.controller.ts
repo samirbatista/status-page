@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -23,7 +22,7 @@ import { type AuthContext } from '../common/auth.types.js';
 import { AllowMfaStage } from '../common/decorators.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { Audit, CurrentAuth } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { type MfaCompletion, MfaService } from './mfa.service.js';
 import { relyingParty, setSessionCookie } from './session-cookie.js';
 import { SessionService } from './session.service.js';
@@ -53,7 +52,7 @@ export class MfaController {
   @AllowMfaStage('pending')
   async verify(
     @CurrentAuth() auth: AuthContext,
-    @Body(new ZodPipe(mfaVerifySchema)) body: z.infer<typeof mfaVerifySchema>,
+    @ZodBody(mfaVerifySchema) body: z.infer<typeof mfaVerifySchema>,
     @Audit() audit: AuditContext,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -74,7 +73,7 @@ export class MfaController {
   @AllowMfaStage('pending')
   async authenticate(
     @CurrentAuth() auth: AuthContext,
-    @Body(new ZodPipe(webauthnResponseSchema)) body: z.infer<typeof webauthnResponseSchema>,
+    @ZodBody(webauthnResponseSchema) body: z.infer<typeof webauthnResponseSchema>,
     @Audit() audit: AuditContext,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -98,7 +97,7 @@ export class MfaController {
   @AllowMfaStage('enroll')
   async totpConfirm(
     @CurrentAuth() auth: AuthContext,
-    @Body(new ZodPipe(totpCodeSchema)) body: z.infer<typeof totpCodeSchema>,
+    @ZodBody(totpCodeSchema) body: z.infer<typeof totpCodeSchema>,
     @Audit() audit: AuditContext,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -124,7 +123,7 @@ export class MfaController {
   @AllowMfaStage('enroll')
   async register(
     @CurrentAuth() auth: AuthContext,
-    @Body(new ZodPipe(webauthnRegisterSchema)) body: z.infer<typeof webauthnRegisterSchema>,
+    @ZodBody(webauthnRegisterSchema) body: z.infer<typeof webauthnRegisterSchema>,
     @Audit() audit: AuditContext,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

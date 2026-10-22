@@ -10,6 +10,7 @@ export * from './maintenance.js';
 export * from './monitor-scheduler.js';
 export * from './network.js';
 export * from './notification-events.js';
+export * from './password-box.js';
 export * from './sanitize.js';
 export * from './secret-box.js';
 export * from './time-zone.js';

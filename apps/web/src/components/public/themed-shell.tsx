@@ -153,9 +153,18 @@ export function ThemedShell({ page, children }: { page: PublicPage; children: Re
           ) : null}
           {theme.texts.footer ? <p className="whitespace-pre-line">{theme.texts.footer}</p> : null}
           <div className="flex flex-wrap justify-between gap-2">
-            <Link href={`/p/${page.slug}/history`} className="hover:underline">
-              {t('history')}
-            </Link>
+            <span className="flex flex-wrap gap-4">
+              <Link href={`/p/${page.slug}/history`} className="hover:underline">
+                {t('history')}
+              </Link>
+              <a
+                href={`/api/public/pages/${page.slug}/feed.atom`}
+                className="hover:underline"
+                type="application/atom+xml"
+              >
+                RSS/Atom
+              </a>
+            </span>
             <span>{t('poweredBy')}</span>
           </div>
         </footer>

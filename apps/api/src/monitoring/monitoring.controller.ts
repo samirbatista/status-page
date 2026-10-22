@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
   type RawBodyRequest,
   Req,
 } from '@nestjs/common';
@@ -29,7 +28,7 @@ import type { Request } from 'express';
 import { z } from 'zod';
 import { Public, RequirePageRole } from '../common/decorators.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { AlertsService } from './alerts.service.js';
 import { InboundService } from './inbound.service.js';
 import { MonitorsService } from './monitors.service.js';
@@ -55,7 +54,7 @@ export class MonitorsController {
   @RequirePageRole('admin')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(monitorInputSchema)) body: MonitorInput,
+    @ZodBody(monitorInputSchema) body: MonitorInput,
     @Audit() audit: AuditContext,
   ) {
     return this.monitors.create(pageId, body, audit);
@@ -67,7 +66,7 @@ export class MonitorsController {
   @HttpCode(200)
   test(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(monitorInputSchema)) body: MonitorInput,
+    @ZodBody(monitorInputSchema) body: MonitorInput,
   ) {
     return this.monitors.test(pageId, body);
   }
@@ -86,7 +85,7 @@ export class MonitorsController {
   results(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('monitorId', ParseUUIDPipe) monitorId: string,
-    @Query(new ZodPipe(rangeQuery)) query: z.infer<typeof rangeQuery>,
+    @ZodQuery(rangeQuery) query: z.infer<typeof rangeQuery>,
   ) {
     return this.monitors.results(pageId, monitorId, query.range);
   }
@@ -96,7 +95,7 @@ export class MonitorsController {
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('monitorId', ParseUUIDPipe) monitorId: string,
-    @Body(new ZodPipe(monitorInputSchema)) body: MonitorInput,
+    @ZodBody(monitorInputSchema) body: MonitorInput,
     @Audit() audit: AuditContext,
   ) {
     return this.monitors.update(pageId, monitorId, body, audit);
@@ -109,7 +108,7 @@ export class MonitorsController {
   testExisting(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('monitorId', ParseUUIDPipe) monitorId: string,
-    @Body(new ZodPipe(monitorInputSchema)) body: MonitorInput,
+    @ZodBody(monitorInputSchema) body: MonitorInput,
   ) {
     return this.monitors.test(pageId, body, monitorId);
   }
@@ -140,7 +139,7 @@ export class InboundSourcesController {
   @RequirePageRole('admin')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(inboundSourceInputSchema)) body: z.infer<typeof inboundSourceInputSchema>,
+    @ZodBody(inboundSourceInputSchema) body: z.infer<typeof inboundSourceInputSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.inbound.create(pageId, body, audit);
@@ -151,7 +150,7 @@ export class InboundSourcesController {
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('sourceId', ParseUUIDPipe) sourceId: string,
-    @Body(new ZodPipe(inboundSourceUpdateSchema)) body: z.infer<typeof inboundSourceUpdateSchema>,
+    @ZodBody(inboundSourceUpdateSchema) body: z.infer<typeof inboundSourceUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.inbound.update(pageId, sourceId, body, audit);
@@ -162,7 +161,7 @@ export class InboundSourcesController {
   rules(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('sourceId', ParseUUIDPipe) sourceId: string,
-    @Body(new ZodPipe(rulesBody)) body: z.infer<typeof rulesBody>,
+    @ZodBody(rulesBody) body: z.infer<typeof rulesBody>,
     @Audit() audit: AuditContext,
   ) {
     return this.inbound.setRules(pageId, sourceId, body.rules, audit);
@@ -219,7 +218,7 @@ export class AlertsController {
   @RequirePageRole('viewer')
   list(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Query(new ZodPipe(alertsQuery)) query: z.infer<typeof alertsQuery>,
+    @ZodQuery(alertsQuery) query: z.infer<typeof alertsQuery>,
   ) {
     return this.alerts.list(pageId, query.state);
   }
@@ -230,7 +229,7 @@ export class AlertsController {
   accept(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('alertId', ParseUUIDPipe) alertId: string,
-    @Body(new ZodPipe(alertAcceptSchema)) body: z.infer<typeof alertAcceptSchema>,
+    @ZodBody(alertAcceptSchema) body: z.infer<typeof alertAcceptSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.alerts.accept(pageId, alertId, body.openIncident, audit);
@@ -266,7 +265,7 @@ export class PostmortemController {
   save(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('incidentId', ParseUUIDPipe) incidentId: string,
-    @Body(new ZodPipe(postmortemSchema)) body: z.infer<typeof postmortemSchema>,
+    @ZodBody(postmortemSchema) body: z.infer<typeof postmortemSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.postmortems.save(pageId, incidentId, body.body, audit);
@@ -278,7 +277,7 @@ export class PostmortemController {
   publish(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('incidentId', ParseUUIDPipe) incidentId: string,
-    @Body(new ZodPipe(postmortemPublishSchema)) body: z.infer<typeof postmortemPublishSchema>,
+    @ZodBody(postmortemPublishSchema) body: z.infer<typeof postmortemPublishSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.postmortems.publish(pageId, incidentId, body.notify, audit);
