@@ -32,7 +32,8 @@
       "minor": "Impacto baixo",
       "major": "Impacto alto",
       "critical": "Impacto crítico"
-    }
+    },
+    "postmortem": "Postmortem"
   },
   "maintenance": {
     "window": "Janela",
@@ -151,7 +152,12 @@
     "telegram_invalid_token": "Token do bot recusado pelo Telegram.",
     "token_required": "Informe o token.",
     "csv_missing_email": "O CSV precisa de uma coluna email.",
-    "csv_too_large": "Importe no máximo 1.000 linhas por vez."
+    "csv_too_large": "Importe no máximo 1.000 linhas por vez.",
+    "monitor_not_found": "Monitor não encontrado.",
+    "inbound_source_not_found": "Integração não encontrada.",
+    "alert_not_found": "Alerta não encontrado.",
+    "postmortem_empty": "Escreva o postmortem antes de publicar.",
+    "headers_only_http": "Cabeçalhos só valem para monitores HTTP."
   },
   "admin": {
     "title": "Painel",
@@ -202,7 +208,9 @@
         "team": "Equipe",
         "settings": "Configurações",
         "appearance": "Aparência",
-        "notifications": "Notificações"
+        "notifications": "Notificações",
+        "monitors": "Monitores",
+        "integrations": "Integrações"
       }
     },
     "overview": {
@@ -709,7 +717,9 @@
         "maintenance_reminder": "Lembrete de manutenção",
         "maintenance_started": "Manutenção iniciada",
         "maintenance_updated": "Manutenção atualizada",
-        "maintenance_completed": "Manutenção concluída"
+        "maintenance_completed": "Manutenção concluída",
+        "component_status_changed": "Status do componente alterado",
+        "postmortem_published": "Postmortem publicado"
       },
       "keepSecret": "Em branco mantém o valor atual (guardado cifrado).",
       "field": {
@@ -842,6 +852,203 @@
       "authTemplateHint": "Categoria Autenticação, com botão de copiar código.",
       "templateLanguage": "Idioma dos templates",
       "testPhone": "Número para teste"
+    },
+    "monitors": {
+      "heading": "Monitores",
+      "new": "Novo monitor",
+      "empty": "Nenhum monitor. Crie um para acompanhar um serviço automaticamente.",
+      "noComponent": "sem componente",
+      "paused": "Pausado",
+      "state": {
+        "up": "No ar",
+        "down": "Fora do ar",
+        "unknown": "Aguardando"
+      },
+      "type": {
+        "http": "HTTP(S)",
+        "tcp": "Porta TCP",
+        "icmp": "Ping (ICMP)",
+        "dns": "DNS",
+        "ssl": "Certificado SSL"
+      },
+      "form": "Configuração do monitor",
+      "name": "Nome",
+      "typeLabel": "Tipo",
+      "target": {
+        "http": "URL",
+        "tcp": "Host",
+        "icmp": "Host ou IP",
+        "dns": "Nome a resolver",
+        "ssl": "Host"
+      },
+      "httpOptions": "Opções HTTP",
+      "method": "Método",
+      "expectedStatus": "Códigos aceitos",
+      "expectedStatusHint": "Ex.: 200-299,301",
+      "keyword": "Palavra-chave",
+      "keywordHint": "Opcional: precisa aparecer na resposta.",
+      "keywordAbsent": "Falhar se a palavra-chave aparecer (ex.: \"erro\")",
+      "followRedirects": "Seguir redirecionamentos",
+      "verifyTls": "Verificar o certificado TLS",
+      "requestBody": "Corpo da requisição",
+      "headers": "Cabeçalhos",
+      "headersKeep": "Em branco mantém os atuais ({names}). Um por linha: Nome: valor",
+      "headersHint": "Opcional. Um por linha: Nome: valor. Guardados cifrados.",
+      "clearHeaders": "Remover os cabeçalhos salvos",
+      "port": "Porta",
+      "recordType": "Registro",
+      "expected": "Valor esperado",
+      "expectedHint": "Opcional: precisa aparecer em alguma resposta.",
+      "dnsServer": "Servidor DNS",
+      "dnsServerHint": "Opcional: usa o do sistema.",
+      "minDaysLeft": "Alertar com menos de (dias)",
+      "icmpHint": "O ping exige o serviço monitor com a capacidade NET_RAW (já configurada no compose).",
+      "interval": "Intervalo (s)",
+      "intervalHint": "Mínimo de {min} s.",
+      "timeout": "Tempo limite (s)",
+      "failureThreshold": "Falhas para cair",
+      "failureThresholdHint": "Checagens seguidas com falha.",
+      "recoveryThreshold": "Sucessos para voltar",
+      "recoveryThresholdHint": "Checagens seguidas com sucesso.",
+      "automation": "Automação",
+      "component": "Componente afetado",
+      "failureStatus": "Status na falha",
+      "mode": "Modo",
+      "modeHint": "Automático muda o status sozinho; sugestão cria um alerta para o operador.",
+      "modes": {
+        "auto": "Automático",
+        "suggest": "Sugestão"
+      },
+      "template": "Template de incidente",
+      "templateHint": "Opcional: abre um incidente quando o serviço cai.",
+      "noTemplate": "Sem incidente (só o status)",
+      "publicMetrics": "Exibir latência e disponibilidade na página pública",
+      "enabled": "Ativo",
+      "testOk": "Funcionou: {ms} ms",
+      "testFail": "Falhou: {error}",
+      "testing": "Testando…",
+      "test": "Testar agora",
+      "confirmDelete": "Excluir este monitor? O status aplicado por ele será normalizado.",
+      "noChecks": "Nenhuma checagem ainda.",
+      "lastCheck": "Última checagem",
+      "settings": "Configuração",
+      "recent": "Últimas checagens"
+    },
+    "integrations": {
+      "heading": "Integrações (webhooks de entrada)",
+      "new": "Nova integração",
+      "intro": "Receba alertas de ferramentas de monitoramento e ligue-os aos componentes com regras.",
+      "empty": "Nenhuma integração.",
+      "disabled": "desativada",
+      "kind": {
+        "alertmanager": "Prometheus Alertmanager",
+        "grafana": "Grafana",
+        "zabbix": "Zabbix",
+        "uptime_kuma": "Uptime Kuma",
+        "generic": "JSON genérico"
+      },
+      "modes": {
+        "auto": "Automático",
+        "suggest": "Sugestão"
+      },
+      "rulesCount": "{count, plural, =0 {nenhuma regra} one {# regra} other {# regras}}",
+      "lastReceived": "último recebimento",
+      "neverReceived": "nada recebido ainda",
+      "close": "Fechar",
+      "configure": "Configurar",
+      "copied": "Copiado",
+      "copy": "Copiar",
+      "url": "URL do webhook (secreta)",
+      "setup": {
+        "alertmanager": "No alertmanager.yml, crie um receiver com webhook_configs apontando para esta URL (send_resolved: true).",
+        "grafana": "Em Alerting → Contact points, adicione um ponto do tipo Webhook com esta URL (método POST).",
+        "zabbix": "Crie um media type Webhook que envie em JSON: event_id, name, host, status (PROBLEM/RESOLVED), severity, message e tags.",
+        "uptime_kuma": "Em Notificações, adicione uma do tipo Webhook com esta URL (corpo application/json).",
+        "generic": "Envie um POST em JSON. Os campos são lidos pelos caminhos do mapeamento abaixo."
+      },
+      "hmacOn": "Assinatura HMAC exigida: cabeçalho X-Signature com sha256=HEX do corpo.",
+      "lastResult": "Último recebimento",
+      "lastResultSummary": "{alerts} alertas, {matched} com regra",
+      "firing": "em falha",
+      "resolved": "normalizado",
+      "outcome": {
+        "applied": "status aplicado",
+        "incident_opened": "incidente aberto",
+        "already_applied": "já aplicado",
+        "restored": "status restaurado",
+        "incident_resolved": "incidente resolvido",
+        "suggested": "sugestão criada",
+        "suggestion_updated": "sugestão atualizada",
+        "suggestion_closed": "sugestão encerrada",
+        "recovery_suggested": "normalização sugerida",
+        "noop": "sem mudança"
+      },
+      "unmatched": "Sem regra",
+      "settings": "Configurações da integração",
+      "confirmRotate": "Gerar uma nova URL? A atual deixa de funcionar.",
+      "rotate": "Gerar nova URL",
+      "confirmDelete": "Excluir esta integração? O status aplicado por ela será normalizado.",
+      "delete": "Excluir",
+      "name": "Nome",
+      "kindLabel": "Ferramenta",
+      "mode": "Modo",
+      "modeHint": "Sugestão é o padrão: um operador confirma antes de mudar a página.",
+      "template": "Template de incidente",
+      "templateHint": "Opcional: abre um incidente na falha.",
+      "noTemplate": "Sem incidente (só o status)",
+      "hmacSecret": "Segredo HMAC",
+      "hmacKeep": "Em branco mantém o segredo atual.",
+      "hmacHint": "Opcional: exige a assinatura do corpo no cabeçalho X-Signature.",
+      "removeHmac": "Remover a verificação HMAC",
+      "mapping": "Mapeamento do JSON",
+      "mappingHint": "Caminhos com pontos (ex.: data.alerts). Vazio na lista = o corpo é um alerta só.",
+      "itemsPath": "Lista de alertas",
+      "keyPath": "Identificador",
+      "namePath": "Nome",
+      "statusPath": "Status",
+      "firingValues": "Valores \"em falha\"",
+      "labelsPath": "Rótulos",
+      "summaryPath": "Mensagem",
+      "enabled": "Ativa",
+      "rules": "Regras",
+      "rulesHint": "A primeira regra que casar define o componente e o status. Campo: name ou label:CHAVE; padrão aceita * como curinga.",
+      "noRules": "Sem regras: os alertas são recebidos e ignorados.",
+      "matchField": "Campo",
+      "pattern": "Padrão",
+      "component": "Componente",
+      "status": "Status na falha",
+      "rulesSaved": "Regras salvas.",
+      "addRule": "Adicionar regra",
+      "saveRules": "Salvar regras"
+    },
+    "alerts": {
+      "heading": "Alertas sugeridos ({count})",
+      "failure": "Falha detectada em {component}",
+      "recovery": "{component} voltou ao normal",
+      "source": {
+        "monitor": "Monitor",
+        "inbound": "Integração"
+      },
+      "occurrences": "{count} ocorrências",
+      "openIncident": "Abrir incidente pelo template",
+      "apply": "Aplicar status",
+      "restore": "Restaurar status",
+      "dismiss": "Descartar"
+    },
+    "postmortem": {
+      "heading": "Postmortem",
+      "none": "Sem postmortem publicado.",
+      "publishedAt": "Publicado em",
+      "draftHint": "Rascunho interno: só aparece na página pública depois de publicado. Aceita Markdown.",
+      "write": "Escrever",
+      "preview": "Pré-visualizar",
+      "saveToPreview": "Salve para pré-visualizar",
+      "body": "Texto do postmortem",
+      "placeholder": "## Resumo\n\n## Linha do tempo\n\n## Causa raiz\n\n## Ações",
+      "save": "Salvar rascunho",
+      "unpublish": "Despublicar",
+      "publish": "Publicar",
+      "notify": "Avisar os assinantes"
     }
   },
   "denied": {
@@ -916,5 +1123,23 @@
     "inviteAccept": "Confirmar inscrição",
     "inviteDone": "Inscrição confirmada!",
     "manageTitle": "Sua inscrição"
+  },
+  "metrics": {
+    "heading": "Desempenho",
+    "uptime": "Disponibilidade",
+    "avgLatency": "Latência média",
+    "latency": "Latência",
+    "latencyChart": "Gráfico de latência",
+    "uptimeBar": "Disponibilidade por intervalo",
+    "noData": "Sem dados no período",
+    "range": {
+      "day": "24 horas",
+      "week": "7 dias",
+      "month": "30 dias"
+    },
+    "rangeLabel": "Período",
+    "empty": "Nenhuma métrica publicada.",
+    "back": "Voltar para a página de status",
+    "viewPerformance": "Ver desempenho"
   }
 }

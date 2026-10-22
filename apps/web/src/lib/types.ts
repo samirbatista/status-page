@@ -48,6 +48,8 @@ export interface PublicIncident {
   startedAt: string;
   resolvedAt: string | null;
   updates: PublicIncidentUpdate[];
+  /** Só na página do incidente, quando publicado. */
+  postmortem?: { html: string; publishedAt: string } | null;
 }
 
 export interface PublicMaintenance {
@@ -78,6 +80,7 @@ export interface PublicSummary {
   maintenances: PublicMaintenance[];
   pastIncidents: PublicIncident[];
   pastIncidentDays: number;
+  hasMetrics: boolean;
 }
 
 export type MfaStage = 'ok' | 'pending' | 'enroll';
@@ -308,4 +311,135 @@ export interface SessionInfo {
   createdAt: string;
   lastActiveAt: string;
   current: boolean;
+}
+
+// --- F5: monitoramento ---------------------------------------------------------
+
+export type MonitorType = 'http' | 'tcp' | 'icmp' | 'dns' | 'ssl';
+export type AutomationMode = 'auto' | 'suggest';
+export type MetricRange = 'day' | 'week' | 'month';
+
+export interface Monitor {
+  id: string;
+  pageId: string;
+  componentId: string | null;
+  component: { id: string; name: string; status: ComponentStatus } | null;
+  name: string;
+  type: MonitorType;
+  target: string;
+  config: Record<string, unknown>;
+  headerNames: string[];
+  intervalSeconds: number;
+  timeoutMs: number;
+  failureThreshold: number;
+  recoveryThreshold: number;
+  mode: AutomationMode;
+  failureStatus: ComponentStatus;
+  templateId: string | null;
+  publicMetrics: boolean;
+  enabled: boolean;
+  state: 'unknown' | 'up' | 'down';
+  consecutiveFailures: number;
+  lastCheckAt: string | null;
+  lastLatencyMs: number | null;
+  lastError: string | null;
+}
+
+export interface CheckResult {
+  ok: boolean;
+  latencyMs: number | null;
+  error: string | null;
+  detail?: string;
+}
+
+export interface MetricPoint {
+  at: string;
+  latencyMs: number | null;
+  uptime: number | null;
+}
+
+export interface MetricSeries {
+  range: MetricRange;
+  from: string;
+  to: string;
+  bucketMinutes: number;
+  uptime: number | null;
+  avgLatencyMs: number | null;
+  checks: number;
+  points: MetricPoint[];
+}
+
+export interface MonitorResults extends MetricSeries {
+  recent: { checkedAt: string; ok: boolean; latencyMs: number | null; error: string | null }[];
+}
+
+export interface PublicMetrics {
+  range: MetricRange;
+  monitors: (MetricSeries & {
+    id: string;
+    name: string;
+    type: MonitorType;
+    component: { id: string; name: string } | null;
+  })[];
+}
+
+export type InboundKind = 'alertmanager' | 'grafana' | 'zabbix' | 'uptime_kuma' | 'generic';
+
+export interface InboundRule {
+  id?: string;
+  matchField: string;
+  pattern: string;
+  componentId: string;
+  status: ComponentStatus;
+}
+
+export interface GenericMapping {
+  itemsPath: string;
+  keyPath: string;
+  namePath: string;
+  statusPath: string;
+  firingValues: string[];
+  labelsPath: string;
+  summaryPath: string;
+}
+
+export interface InboundSource {
+  id: string;
+  name: string;
+  kind: InboundKind;
+  mode: AutomationMode;
+  templateId: string | null;
+  enabled: boolean;
+  hasHmac: boolean;
+  url: string;
+  mapping: GenericMapping;
+  rules: InboundRule[];
+  lastReceivedAt: string | null;
+  lastResult: {
+    alerts: number;
+    matched: { name: string; firing: boolean; componentId: string; outcome: string }[];
+    unmatched: string[];
+  } | null;
+}
+
+export interface SuggestedAlert {
+  id: string;
+  kind: 'failure' | 'recovery';
+  suggestedStatus: ComponentStatus;
+  title: string;
+  detail: string | null;
+  source: 'monitor' | 'inbound';
+  templateId: string | null;
+  occurrences: number;
+  lastSeenAt: string;
+  createdAt: string;
+  component: { id: string; name: string; status: ComponentStatus };
+}
+
+export interface Postmortem {
+  incidentId: string;
+  body: string;
+  html: string;
+  publishedAt: string | null;
+  updatedAt: string;
 }

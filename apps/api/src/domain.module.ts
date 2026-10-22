@@ -19,6 +19,17 @@ import {
 } from './notifications/notifications.controller.js';
 import { ChannelsService } from './notifications/channels.service.js';
 import { ProviderSettingsService } from './notifications/provider-settings.service.js';
+import {
+  AlertsController,
+  InboundHooksController,
+  InboundSourcesController,
+  MonitorsController,
+  PostmortemController,
+} from './monitoring/monitoring.controller.js';
+import { AlertsService } from './monitoring/alerts.service.js';
+import { InboundService } from './monitoring/inbound.service.js';
+import { MonitorsService } from './monitoring/monitors.service.js';
+import { PostmortemService } from './monitoring/postmortem.service.js';
 import { PagesController } from './pages/pages.controller.js';
 import { SubscribersService } from './subscribers/subscribers.service.js';
 import { SubscriptionsController } from './subscribers/subscriptions.controller.js';
@@ -32,13 +43,18 @@ import { UsersService } from './users/users.service.js';
 
 @Module({
   controllers: [
+    AlertsController,
     AuditController,
     ComponentsController,
     DomainsController,
+    InboundHooksController,
+    InboundSourcesController,
     IncidentsController,
     MaintenancesController,
+    MonitorsController,
     NotificationsController,
     PagesController,
+    PostmortemController,
     ProviderSettingsController,
     PublicController,
     SubscriptionsController,
@@ -48,13 +64,17 @@ import { UsersService } from './users/users.service.js';
     UsersController,
   ],
   providers: [
+    AlertsService,
     AuditService,
     ChannelsService,
     ComponentsService,
     DomainsService,
+    InboundService,
     IncidentsService,
     MaintenancesService,
+    MonitorsService,
     PagesService,
+    PostmortemService,
     ProviderSettingsService,
     PublicService,
     SubscribersService,

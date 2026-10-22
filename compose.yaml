@@ -126,13 +126,16 @@ services:
       target: node-app
       args:
         PACKAGE: '@status-page/monitor'
+        SYSTEM_PACKAGES: iputils-ping
     image: status-page/monitor:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    # Necessário para as checagens ICMP (ping) da F5.
+    # Necessário para as checagens ICMP (ping).
     cap_add:
       - NET_RAW
     environment:
       <<: *backend-env
+      # Descriptografa os cabeçalhos HTTP dos monitores (ex.: tokens).
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env}
     healthcheck:
       <<: *node-healthcheck
       test:

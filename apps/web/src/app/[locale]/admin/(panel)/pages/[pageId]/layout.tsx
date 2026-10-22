@@ -45,6 +45,10 @@ export default async function PageLayout({
         <NavLink href={`${base}/maintenances`}>{t('tabs.maintenances')}</NavLink>
         <NavLink href={`${base}/components`}>{t('tabs.components')}</NavLink>
         <NavLink href={`${base}/templates`}>{t('tabs.templates')}</NavLink>
+        <NavLink href={`${base}/monitors`}>{t('tabs.monitors')}</NavLink>
+        {can(role, 'admin') ? (
+          <NavLink href={`${base}/integrations`}>{t('tabs.integrations')}</NavLink>
+        ) : null}
         {can(role, 'operator') ? (
           <NavLink href={`${base}/notifications`}>{t('tabs.notifications')}</NavLink>
         ) : null}

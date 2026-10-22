@@ -25,14 +25,17 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
-  // Na página pública, só o seletor de idioma e a barra de disponibilidade usam
-  // traduções no cliente; o painel abre um provider próprio com todas as mensagens.
-  const { common, uptime } = await getMessages();
+  // Na página pública, só o seletor de idioma, a barra de disponibilidade e os
+  // gráficos de métricas usam traduções no cliente; o painel abre um provider
+  // próprio com todas as mensagens.
+  const { common, uptime, metrics } = await getMessages();
 
   return (
     <html lang={locale}>
       <body className="min-h-screen antialiased">
-        <NextIntlClientProvider messages={{ common, uptime }}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={{ common, uptime, metrics }}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import postcss, { type AtRule, type Declaration } from 'postcss';
+import { Marked } from 'marked';
 import sanitizeHtmlLib from 'sanitize-html';
 
 /**
@@ -123,4 +124,53 @@ const HTML_OPTIONS: sanitizeHtmlLib.IOptions = {
 /** HTML de cabeçalho/rodapé: sem scripts, estilos inline, eventos ou iframes. */
 export function sanitizeHtml(input: string): string {
   return sanitizeHtmlLib(input, HTML_OPTIONS).trim();
+}
+
+const MARKDOWN_OPTIONS: sanitizeHtmlLib.IOptions = {
+  allowedTags: [
+    'a',
+    'p',
+    'strong',
+    'em',
+    'del',
+    'br',
+    'hr',
+    'ul',
+    'ol',
+    'li',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'blockquote',
+    'code',
+    'pre',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
+  ],
+  allowedAttributes: {
+    a: ['href', 'title', 'rel', 'target'],
+    ol: ['start'],
+    th: ['align'],
+    td: ['align'],
+  },
+  allowedSchemes: ['http', 'https', 'mailto'],
+  allowProtocolRelative: false,
+  disallowedTagsMode: 'discard',
+  transformTags: {
+    a: (tagName, attribs) => ({
+      tagName,
+      attribs: { ...attribs, rel: 'noopener noreferrer nofollow', target: '_blank' },
+    }),
+  },
+};
+const markdown = new Marked({ gfm: true, breaks: true, async: false });
+
+/** Markdown (postmortem) para HTML seguro: sem HTML bruto, imagens ou scripts. */
+export function renderMarkdown(input: string): string {
+  return sanitizeHtmlLib(markdown.parse(input) as string, MARKDOWN_OPTIONS).trim();
 }

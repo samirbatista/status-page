@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { SuggestedAlerts } from '@/components/admin/alerts';
 import { ComponentStatusSelect } from '@/components/admin/component-status-select';
 import { LocalTime } from '@/components/local-time';
 import { IncidentStatusBadge, MaintenanceStatusBadge } from '@/components/status-badge';
@@ -11,6 +12,7 @@ import {
   type AdminMaintenance,
   type Paginated,
   type Structure,
+  type SuggestedAlert,
 } from '@/lib/types';
 
 export default async function PageOverview({
@@ -21,7 +23,7 @@ export default async function PageOverview({
   const { locale, pageId } = await params;
   const me = await getMe(locale);
   const role = pageRole(me, pageId);
-  const [incidents, scheduled, running, structure] = await Promise.all([
+  const [incidents, scheduled, running, structure, alerts] = await Promise.all([
     adminApi<Paginated<AdminIncident>>(`/pages/${pageId}/incidents?active=true&limit=50`, locale),
     adminApi<Paginated<AdminMaintenance>>(
       `/pages/${pageId}/maintenances?status=scheduled&limit=10`,
@@ -32,6 +34,7 @@ export default async function PageOverview({
       locale,
     ),
     adminApi<Structure>(`/pages/${pageId}/structure`, locale),
+    adminApi<SuggestedAlert[]>(`/pages/${pageId}/alerts`, locale),
   ]);
   const t = await getTranslations('admin.overview');
   const base = `/admin/pages/${pageId}`;
@@ -40,6 +43,7 @@ export default async function PageOverview({
 
   return (
     <div className="grid gap-6">
+      <SuggestedAlerts pageId={pageId} alerts={alerts} canAct={isOperator} />
       <Card
         title={t('activeIncidents')}
         actions={

@@ -9,6 +9,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { METRIC_RANGES } from '@status-page/shared';
 import { z } from 'zod';
 import { cacheControlFor } from '../access/page-access.js';
 import { type AuthContext } from '../common/auth.types.js';
@@ -18,6 +19,7 @@ import { ZodPipe } from '../common/zod.pipe.js';
 import { PublicService, type Viewer } from './public.service.js';
 
 const historyQuery = z.object({ month: z.string() });
+const metricsQuery = z.object({ range: z.enum(METRIC_RANGES).default('day') });
 const summaryQuery = z.object({ preview: z.enum(['draft']).optional() });
 
 @Public()
@@ -59,6 +61,19 @@ export class PublicController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const data = await this.publicData.history(slug, query.month, { auth, ip: req.ip });
+    res.set('Cache-Control', cacheControlFor(data.page));
+    return data;
+  }
+
+  @Get('pages/:slug/metrics')
+  async metrics(
+    @Param('slug') slug: string,
+    @Query(new ZodPipe(metricsQuery)) query: z.infer<typeof metricsQuery>,
+    @CurrentAuth() auth: AuthContext | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.publicData.metrics(slug, query.range, { auth, ip: req.ip });
     res.set('Cache-Control', cacheControlFor(data.page));
     return data;
   }

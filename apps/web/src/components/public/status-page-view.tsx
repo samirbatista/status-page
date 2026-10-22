@@ -78,6 +78,15 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
         ) : null}
       </section>
 
+      {summary.hasMetrics ? (
+        <Link
+          href={`/p/${page.slug}/metrics`}
+          className="self-end text-sm text-[var(--link)] hover:underline"
+        >
+          {t('metrics.viewPerformance')} →
+        </Link>
+      ) : null}
+
       {page.theme.showPastIncidents ? <PastIncidents summary={summary} /> : null}
     </ThemedShell>
   );

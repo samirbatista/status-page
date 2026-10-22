@@ -40,6 +40,7 @@ export default async function IncidentPage({ params }: { params: Params }) {
         incident={incident}
         timeZone={page.timezone}
         impactLabel={t(`impact.${incident.impact}`)}
+        postmortemLabel={t('postmortem')}
       />
     </ThemedShell>
   );
@@ -49,10 +50,12 @@ function IncidentDetail({
   incident,
   timeZone,
   impactLabel,
+  postmortemLabel,
 }: {
   incident: PublicIncident;
   timeZone: string;
   impactLabel: string;
+  postmortemLabel: string;
 }) {
   const timeline = useIncidentTimeline(incident.updates);
   return (
@@ -67,6 +70,24 @@ function IncidentDetail({
       <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
         <Timeline items={timeline} timeZone={timeZone} />
       </div>
+      {incident.postmortem ? (
+        <section
+          aria-labelledby="postmortem"
+          className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6"
+        >
+          <h2 id="postmortem" className="text-xl font-semibold">
+            {postmortemLabel}
+          </h2>
+          <p className="text-sm text-[var(--muted)]">
+            <LocalTime value={incident.postmortem.publishedAt} fallbackTimeZone={timeZone} />
+          </p>
+          {/* HTML gerado do Markdown e sanitizado pela API. */}
+          <div
+            className="postmortem"
+            dangerouslySetInnerHTML={{ __html: incident.postmortem.html }}
+          />
+        </section>
+      ) : null}
     </article>
   );
 }

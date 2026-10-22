@@ -3,7 +3,7 @@
 // F2: tema visual, uploads, domínios próprios e páginas privadas.
 // F3: provedores LDAP, mapeamento de grupos, MFA e conta de emergência.
 // F4: notificações (canais da equipe, templates, fila de entregas) e assinantes.
-// Monitoramento entra na fase seguinte.
+// F5: monitoramento, webhooks de entrada, alertas sugeridos e postmortem.
 
 generator client {
   provider     = "prisma-client"
@@ -103,6 +103,44 @@ enum NotificationEventType {
   maintenance_started
   maintenance_updated
   maintenance_completed
+  /// Status de componente alterado pela automação, sem incidente aberto.
+  component_status_changed
+  postmortem_published
+}
+
+enum MonitorType {
+  http
+  tcp
+  icmp
+  dns
+  ssl
+}
+
+/// Automático: aplica o status (e abre incidente). Sugestão: cria um alerta para o operador.
+enum AutomationMode {
+  auto
+  suggest
+}
+
+enum MonitorState {
+  unknown
+  up
+  down
+}
+
+enum InboundKind {
+  alertmanager
+  grafana
+  zabbix
+  uptime_kuma
+  generic
+}
+
+enum AlertState {
+  open
+  accepted
+  dismissed
+  resolved
 }
 
 enum DeliveryStatus {
@@ -150,21 +188,25 @@ model Page {
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  domains         PageDomain[]
-  components      PageComponent[]
-  groups          ComponentGroup[]
-  roles           UserPageRole[]
-  ldapMappings    LdapGroupMapping[]
-  channels        NotificationChannel[]
-  templatesNotify NotificationTemplate[]
-  events          NotificationEvent[]
-  deliveries      NotificationDelivery[]
-  subscribers     Subscriber[]
-  incidents       Incident[]
-  maintenances    Maintenance[]
-  templates       IncidentTemplate[]
-  themes          PageTheme[]
-  uploads         Upload[]
+  domains          PageDomain[]
+  components       PageComponent[]
+  groups           ComponentGroup[]
+  roles            UserPageRole[]
+  ldapMappings     LdapGroupMapping[]
+  channels         NotificationChannel[]
+  templatesNotify  NotificationTemplate[]
+  events           NotificationEvent[]
+  deliveries       NotificationDelivery[]
+  subscribers      Subscriber[]
+  incidents        Incident[]
+  maintenances     Maintenance[]
+  templates        IncidentTemplate[]
+  themes           PageTheme[]
+  uploads          Upload[]
+  monitors         Monitor[]
+  inboundSources   InboundSource[]
+  automationStates AutomationState[]
+  alerts           Alert[]
 
   @@map("pages")
 }
@@ -209,11 +251,15 @@ model Component {
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  pages           PageComponent[]
-  history         ComponentStatusHistory[]
-  subscribers     SubscriberComponent[]
-  incidentUpdates IncidentUpdateComponent[]
-  maintenances    MaintenanceComponent[]
+  pages            PageComponent[]
+  history          ComponentStatusHistory[]
+  subscribers      SubscriberComponent[]
+  monitors         Monitor[]
+  inboundRules     InboundRule[]
+  alerts           Alert[]
+  automationStates AutomationState[]
+  incidentUpdates  IncidentUpdateComponent[]
+  maintenances     MaintenanceComponent[]
 
   @@map("components")
 }
@@ -302,9 +348,10 @@ model Incident {
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  page      Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  createdBy User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  updates   IncidentUpdate[]
+  page       Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy  User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  updates    IncidentUpdate[]
+  postmortem Postmortem?
 
   @@index([pageId, status])
   @@index([pageId, startedAt])
@@ -416,7 +463,9 @@ model IncidentTemplate {
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page           Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  monitors       Monitor[]
+  inboundSources InboundSource[]
 
   @@unique([pageId, name])
   @@map("incident_templates")
@@ -829,6 +878,189 @@ model ConsentRecord {
   @@index([pageId, createdAt])
   @@index([subscriberId])
   @@map("consent_records")
+}
+
+// ---------------------------------------------------------------------------
+// Monitoramento, webhooks de entrada e alertas
+// ---------------------------------------------------------------------------
+
+model Monitor {
+  id                   String          @id @default(uuid(7)) @db.Uuid
+  pageId               String          @map("page_id") @db.Uuid
+  /// Componente afetado pelas mudanças de estado.
+  componentId          String?         @map("component_id") @db.Uuid
+  name                 String
+  type                 MonitorType
+  /// URL (HTTP), host (TCP/ICMP/SSL) ou nome a resolver (DNS).
+  target               String
+  /// Opções do tipo: porta, método, códigos esperados, palavra-chave, registro DNS...
+  config               Json            @default("{}")
+  /// Cabeçalhos HTTP (podem ter credenciais), cifrados em JSON.
+  headersEnc           String?         @map("headers_enc")
+  intervalSeconds      Int             @default(60) @map("interval_seconds")
+  timeoutMs            Int             @default(10000) @map("timeout_ms")
+  /// Falhas seguidas para considerar o serviço fora do ar.
+  failureThreshold     Int             @default(3) @map("failure_threshold")
+  /// Sucessos seguidos para considerar o serviço normalizado.
+  recoveryThreshold    Int             @default(2) @map("recovery_threshold")
+  mode                 AutomationMode  @default(auto)
+  /// Status aplicado ao componente quando o serviço cai.
+  failureStatus        ComponentStatus @default(major_outage) @map("failure_status")
+  /// Template para abrir o incidente automaticamente (modo automático).
+  templateId           String?         @map("template_id") @db.Uuid
+  /// Latência exibida nas métricas públicas.
+  publicMetrics        Boolean         @default(false) @map("public_metrics")
+  enabled              Boolean         @default(true)
+  state                MonitorState    @default(unknown)
+  consecutiveFailures  Int             @default(0) @map("consecutive_failures")
+  consecutiveSuccesses Int             @default(0) @map("consecutive_successes")
+  lastCheckAt          DateTime?       @map("last_check_at") @db.Timestamptz(3)
+  lastLatencyMs        Int?            @map("last_latency_ms")
+  lastError            String?         @map("last_error")
+  /// Próxima checagem: o agendador "reivindica" o monitor avançando este campo.
+  nextCheckAt          DateTime        @default(now()) @map("next_check_at") @db.Timestamptz(3)
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page      Page                 @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  component Component?           @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  template  IncidentTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  results   MonitorCheckResult[]
+
+  @@index([pageId])
+  @@index([enabled, nextCheckAt])
+  @@map("monitors")
+}
+
+/// Resultado de cada checagem (retenção de 31 dias); alimenta as métricas.
+model MonitorCheckResult {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  monitorId String   @map("monitor_id") @db.Uuid
+  checkedAt DateTime @default(now()) @map("checked_at") @db.Timestamptz(3)
+  ok        Boolean
+  latencyMs Int?     @map("latency_ms")
+  error     String?
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, checkedAt])
+  @@index([checkedAt])
+  @@map("monitor_check_results")
+}
+
+/// Origem de webhooks de entrada (Alertmanager, Grafana, Zabbix, Uptime Kuma, genérico).
+model InboundSource {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  pageId         String         @map("page_id") @db.Uuid
+  kind           InboundKind
+  name           String
+  /// Token da URL: hash para a busca, cifrado para exibir a URL ao Admin.
+  tokenEnc       String         @map("token_enc")
+  tokenHash      String         @unique @map("token_hash")
+  /// Segredo opcional do HMAC-SHA256 do corpo (cabeçalho X-Signature).
+  hmacSecretEnc  String?        @map("hmac_secret_enc")
+  mode           AutomationMode @default(suggest)
+  templateId     String?        @map("template_id") @db.Uuid
+  /// JSON genérico: caminhos dos campos (chave, nome, status, rótulos).
+  mapping        Json           @default("{}")
+  enabled        Boolean        @default(true)
+  lastReceivedAt DateTime?      @map("last_received_at") @db.Timestamptz(3)
+  /// Resumo do último recebimento (sinais, regras aplicadas, erro).
+  lastResult     Json?          @map("last_result")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  page     Page              @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  template IncidentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  rules    InboundRule[]
+
+  @@index([pageId])
+  @@map("inbound_sources")
+}
+
+/// Regra: alerta (por nome ou rótulo) → componente → status. A primeira que casar vale.
+model InboundRule {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  sourceId    String          @map("source_id") @db.Uuid
+  position    Int             @default(0)
+  /// `name` ou `label:<chave>`.
+  matchField  String          @map("match_field")
+  /// Valor esperado; aceita `*` como curinga.
+  pattern     String
+  componentId String          @map("component_id") @db.Uuid
+  status      ComponentStatus
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  source    InboundSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  component Component     @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, position])
+  @@map("inbound_rules")
+}
+
+/// Falha aplicada automaticamente (ou sugestão aceita) e ainda não normalizada.
+model AutomationState {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  /// `monitor:<id>` ou `inbound:<origem>:<alerta>:<componente>`.
+  key            String          @unique
+  pageId         String          @map("page_id") @db.Uuid
+  componentId    String          @map("component_id") @db.Uuid
+  appliedStatus  ComponentStatus @map("applied_status")
+  previousStatus ComponentStatus @map("previous_status")
+  /// Incidente aberto pela automação (resolvido quando normaliza).
+  incidentId     String?         @map("incident_id") @db.Uuid
+  title          String
+  startedAt      DateTime        @default(now()) @map("started_at") @db.Timestamptz(3)
+
+  page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@index([componentId])
+  @@map("automation_states")
+}
+
+/// Sugestão para o operador confirmar (modo sugestão).
+model Alert {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  pageId          String          @map("page_id") @db.Uuid
+  componentId     String          @map("component_id") @db.Uuid
+  /// Mesma chave da automação: repetições atualizam o mesmo alerta.
+  key             String
+  /// `failure` (aplicar o status) ou `recovery` (normalizar).
+  kind            String          @default("failure")
+  suggestedStatus ComponentStatus @map("suggested_status")
+  title           String
+  detail          String?
+  /// `monitor` ou `inbound`.
+  source          String
+  templateId      String?         @map("template_id") @db.Uuid
+  state           AlertState      @default(open)
+  occurrences     Int             @default(1)
+  lastSeenAt      DateTime        @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  handledAt       DateTime?       @map("handled_at") @db.Timestamptz(3)
+  handledById     String?         @map("handled_by_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, state])
+  @@index([key, state])
+  @@map("alerts")
+}
+
+/// Análise pós-incidente em Markdown; rascunho até a publicação.
+model Postmortem {
+  incidentId  String    @id @map("incident_id") @db.Uuid
+  body        String
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@map("postmortems")
 }
 
 // ---------------------------------------------------------------------------
