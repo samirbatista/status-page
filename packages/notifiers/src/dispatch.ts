@@ -99,6 +99,7 @@ export function subscriberDestination(kind: NotificationKind, target: string): D
 
 /**
  * Cria as entregas de um evento: canais da equipe habilitados para a categoria
+ * (ou para o tipo específico do evento)
  * e assinantes **ativos** (confirmados) interessados na categoria e nos
  * componentes. Idempotente: um evento já distribuído não gera novas entregas.
  */
@@ -114,7 +115,7 @@ export async function fanOutEvent(prisma: PrismaClient, eventId: string): Promis
     const category = eventCategory(event.type as NotificationEventType);
 
     const channels = await tx.notificationChannel.findMany({
-      where: { pageId: event.pageId, enabled: true, events: { has: category } },
+      where: { pageId: event.pageId, enabled: true, events: { hasSome: [category, event.type] } },
       select: { id: true, kind: true, name: true },
     });
     const componentFilter: Prisma.SubscriberWhereInput =

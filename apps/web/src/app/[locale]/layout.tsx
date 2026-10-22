@@ -15,6 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('appName') };
 }
 
+// Renderização dinâmica: cada resposta leva um nonce novo na CSP (ver proxy.ts).
+export const dynamic = 'force-dynamic';
+
 export default async function LocaleLayout({
   children,
   params,

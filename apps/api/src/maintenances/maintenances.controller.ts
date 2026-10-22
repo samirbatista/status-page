@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -8,7 +7,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
 } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import {
@@ -22,7 +20,7 @@ import { type z } from 'zod';
 import { RequirePageRole } from '../common/decorators.js';
 import { listQuerySchema } from '../common/list-query.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { MaintenancesService } from './maintenances.service.js';
 
 const maintenanceListSchema = listQuerySchema.extend({
@@ -37,7 +35,7 @@ export class MaintenancesController {
   @RequirePageRole('viewer')
   list(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Query(new ZodPipe(maintenanceListSchema)) query: z.infer<typeof maintenanceListSchema>,
+    @ZodQuery(maintenanceListSchema) query: z.infer<typeof maintenanceListSchema>,
   ) {
     return this.maintenances.list(pageId, query);
   }
@@ -55,7 +53,7 @@ export class MaintenancesController {
   @RequirePageRole('operator')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(maintenanceCreateSchema)) body: MaintenanceCreateInput,
+    @ZodBody(maintenanceCreateSchema) body: MaintenanceCreateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.maintenances.create(pageId, body, audit);
@@ -66,7 +64,7 @@ export class MaintenancesController {
   edit(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('maintenanceId', ParseUUIDPipe) maintenanceId: string,
-    @Body(new ZodPipe(maintenanceEditSchema)) body: z.infer<typeof maintenanceEditSchema>,
+    @ZodBody(maintenanceEditSchema) body: z.infer<typeof maintenanceEditSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.maintenances.edit(pageId, maintenanceId, body, audit);
@@ -77,7 +75,7 @@ export class MaintenancesController {
   addUpdate(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('maintenanceId', ParseUUIDPipe) maintenanceId: string,
-    @Body(new ZodPipe(maintenanceUpdateCreateSchema))
+    @ZodBody(maintenanceUpdateCreateSchema)
     body: z.infer<typeof maintenanceUpdateCreateSchema>,
     @Audit() audit: AuditContext,
   ) {

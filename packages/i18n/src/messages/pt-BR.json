@@ -157,7 +157,13 @@
     "inbound_source_not_found": "Integração não encontrada.",
     "alert_not_found": "Alerta não encontrado.",
     "postmortem_empty": "Escreva o postmortem antes de publicar.",
-    "headers_only_http": "Cabeçalhos só valem para monitores HTTP."
+    "headers_only_http": "Cabeçalhos só valem para monitores HTTP.",
+    "invalid_api_token": "Token de API inválido, expirado ou revogado.",
+    "api_token_not_allowed": "Esta ação não está disponível por token de API.",
+    "api_token_not_found": "Token não encontrado.",
+    "invalid_config_file": "Arquivo de configuração inválido.",
+    "invalid_password": "Senha incorreta para este arquivo.",
+    "file_required": "Escolha um arquivo."
   },
   "admin": {
     "title": "Painel",
@@ -183,7 +189,8 @@
       "profile": "Meu perfil",
       "logout": "Sair",
       "auth": "Autenticação",
-      "notifications": "Notificações"
+      "notifications": "Notificações",
+      "transfer": "Exportar e importar"
     },
     "home": {
       "noPagesOwner": "Ainda não há páginas.",
@@ -210,7 +217,8 @@
         "appearance": "Aparência",
         "notifications": "Notificações",
         "monitors": "Monitores",
-        "integrations": "Integrações"
+        "integrations": "Integrações",
+        "developers": "API e incorporação"
       }
     },
     "overview": {
@@ -815,7 +823,9 @@
       "saveTemplate": "Salvar",
       "preview": "Pré-visualizar",
       "restoreDefault": "Voltar ao padrão",
-      "customized": "Mensagens personalizadas"
+      "customized": "Mensagens personalizadas",
+      "specificEvents": "Eventos específicos (opcional)",
+      "specificEventsHint": "Marcando algum, o webhook recebe só esses eventos em vez das categorias acima."
     },
     "notifySettings": {
       "heading": "Notificações",
@@ -1049,6 +1059,81 @@
       "unpublish": "Despublicar",
       "publish": "Publicar",
       "notify": "Avisar os assinantes"
+    },
+    "developers": {
+      "tokensHeading": "Tokens de API",
+      "tokensIntro": "Tokens permitem automatizar incidentes, componentes e manutenções desta página pela API (Authorization: Bearer). O token age em nome de quem o criou e nunca passa do seu papel.",
+      "tokenCreated": "Copie o token agora: ele não será exibido de novo.",
+      "noTokens": "Nenhum token ativo.",
+      "expired": "expirou em",
+      "expires": "expira em",
+      "noExpiry": "sem validade",
+      "lastUsed": "último uso",
+      "neverUsed": "nunca usado",
+      "confirmRevoke": "Revogar este token? Integrações que o usam deixam de funcionar.",
+      "revoke": "Revogar",
+      "tokenName": "Nome",
+      "tokenRole": "Papel",
+      "tokenExpires": "Validade",
+      "days": "{count} dias",
+      "createToken": "Criar token",
+      "copied": "Copiado",
+      "copy": "Copiar",
+      "embedHeading": "Incorporar e compartilhar",
+      "privateHint": "A página é privada: selo, widget, feeds e JSON seguem a mesma regra de acesso e não funcionam em sites externos.",
+      "badge": "Selo de status",
+      "widget": "Widget (mini painel)",
+      "widgetHint": "Cole o script onde o painel deve aparecer; ele ajusta a altura sozinho. O iframe é a alternativa sem JavaScript.",
+      "feeds": "Feeds e JSON",
+      "apiDocs": "Documentação da API (OpenAPI)",
+      "exportHistory": "Exportar histórico de incidentes (JSON)"
+    },
+    "transfer": {
+      "exportHeading": "Exportar configuração",
+      "exportIntro": "Gera um arquivo JSON com páginas, temas e arquivos, componentes, grupos, templates, mensagens, canais, monitores, integrações e LDAP. Incidentes e assinantes não entram (têm exportação própria).",
+      "pages": "Páginas",
+      "includeLdap": "Incluir provedores LDAP e mapeamentos",
+      "password": "Senha para os segredos",
+      "passwordHint": "Opcional (mínimo de 12 caracteres). Com senha, URLs de webhook, tokens e senhas vão cifrados no arquivo; sem senha, ficam de fora.",
+      "export": "Exportar",
+      "importHeading": "Importar configuração",
+      "importIntro": "Envie um arquivo exportado, confira a pré-visualização e confirme. Nada é gravado na pré-visualização.",
+      "file": "Arquivo (.json)",
+      "mode": "Modo",
+      "modes": {
+        "merge": "Mesclar",
+        "replace": "Substituir"
+      },
+      "modeHint": {
+        "merge": "Cria o que falta e atualiza o que já existe (pelo nome). Nada é removido.",
+        "replace": "Nas páginas do arquivo, também remove o que não está nele. Provedores LDAP nunca são removidos."
+      },
+      "importPassword": "Senha da exportação",
+      "importPasswordHint": "Necessária para importar os segredos.",
+      "preview": "Pré-visualizar",
+      "apply": "Importar",
+      "confirmReplace": "Substituir remove itens das páginas que não estão no arquivo. Continuar?",
+      "previewDone": "Pré-visualização: nada foi gravado.",
+      "applied": "Importação concluída.",
+      "noSecrets": "Segredos não importados.",
+      "page": "Página",
+      "created": "Criados",
+      "updated": "Atualizados",
+      "removed": "Removidos",
+      "action": {
+        "create": "nova",
+        "update": "existente"
+      },
+      "ldap": "Provedores LDAP",
+      "warnings": "Avisos",
+      "warning": {
+        "secrets_not_imported": "Os segredos não foram importados (informe a senha da exportação).",
+        "channel_needs_secrets": "Canal ignorado: precisa da senha da exportação.",
+        "ldap_disabled_without_password": "Provedor LDAP criado desativado (sem a senha do bind).",
+        "domain_taken": "Domínio já usado por outra página.",
+        "mapping_page_missing": "Mapeamento LDAP de página inexistente.",
+        "secret_kept_new_destination": "A credencial guardada será usada com um novo destino (confira):"
+      }
     }
   },
   "denied": {
@@ -1141,5 +1226,12 @@
     "empty": "Nenhuma métrica publicada.",
     "back": "Voltar para a página de status",
     "viewPerformance": "Ver desempenho"
+  },
+  "distribution": {
+    "feedTitle": "{page} — histórico de status",
+    "badgeLabel": "status",
+    "viewPage": "Ver página de status",
+    "embedTitle": "Status de {page}",
+    "subscribeFeed": "Assinar o feed (RSS/Atom)"
   }
 }

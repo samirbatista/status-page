@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -15,7 +14,7 @@ import { pageCreateSchema, pageUpdateSchema, type PageCreateInput } from '@statu
 import { type AuthContext } from '../common/auth.types.js';
 import { RequireOwner, RequirePageRole } from '../common/decorators.js';
 import { Audit, CurrentAuth } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { type z } from 'zod';
 import { PagesService } from './pages.service.js';
 
@@ -30,7 +29,7 @@ export class PagesController {
 
   @Post()
   @RequireOwner()
-  create(@Body(new ZodPipe(pageCreateSchema)) body: PageCreateInput, @Audit() audit: AuditContext) {
+  create(@ZodBody(pageCreateSchema) body: PageCreateInput, @Audit() audit: AuditContext) {
     return this.pages.create(body, audit);
   }
 
@@ -44,7 +43,7 @@ export class PagesController {
   @RequirePageRole('admin')
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(pageUpdateSchema)) body: z.infer<typeof pageUpdateSchema>,
+    @ZodBody(pageUpdateSchema) body: z.infer<typeof pageUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.pages.update(pageId, body, audit);

@@ -157,7 +157,13 @@
     "inbound_source_not_found": "Integration not found.",
     "alert_not_found": "Alert not found.",
     "postmortem_empty": "Write the postmortem before publishing.",
-    "headers_only_http": "Headers only apply to HTTP monitors."
+    "headers_only_http": "Headers only apply to HTTP monitors.",
+    "invalid_api_token": "Invalid, expired or revoked API token.",
+    "api_token_not_allowed": "This action is not available through an API token.",
+    "api_token_not_found": "Token not found.",
+    "invalid_config_file": "Invalid configuration file.",
+    "invalid_password": "Wrong password for this file.",
+    "file_required": "Choose a file."
   },
   "admin": {
     "title": "Admin",
@@ -183,7 +189,8 @@
       "profile": "My profile",
       "logout": "Sign out",
       "auth": "Authentication",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "transfer": "Export & import"
     },
     "home": {
       "noPagesOwner": "There are no pages yet.",
@@ -210,7 +217,8 @@
         "appearance": "Appearance",
         "notifications": "Notifications",
         "monitors": "Monitors",
-        "integrations": "Integrations"
+        "integrations": "Integrations",
+        "developers": "API & embedding"
       }
     },
     "overview": {
@@ -815,7 +823,9 @@
       "saveTemplate": "Save",
       "preview": "Preview",
       "restoreDefault": "Restore default",
-      "customized": "Customized messages"
+      "customized": "Customized messages",
+      "specificEvents": "Specific events (optional)",
+      "specificEventsHint": "If any is checked, the webhook receives only those events instead of the categories above."
     },
     "notifySettings": {
       "heading": "Notifications",
@@ -1049,6 +1059,81 @@
       "unpublish": "Unpublish",
       "publish": "Publish",
       "notify": "Notify subscribers"
+    },
+    "developers": {
+      "tokensHeading": "API tokens",
+      "tokensIntro": "Tokens let you automate this page's incidents, components and maintenances through the API (Authorization: Bearer). A token acts on behalf of its creator and never exceeds their role.",
+      "tokenCreated": "Copy the token now: it will not be shown again.",
+      "noTokens": "No active tokens.",
+      "expired": "expired on",
+      "expires": "expires on",
+      "noExpiry": "no expiry",
+      "lastUsed": "last used",
+      "neverUsed": "never used",
+      "confirmRevoke": "Revoke this token? Integrations using it will stop working.",
+      "revoke": "Revoke",
+      "tokenName": "Name",
+      "tokenRole": "Role",
+      "tokenExpires": "Validity",
+      "days": "{count} days",
+      "createToken": "Create token",
+      "copied": "Copied",
+      "copy": "Copy",
+      "embedHeading": "Embed and share",
+      "privateHint": "This page is private: badge, widget, feeds and JSON follow the same access rule and do not work on external sites.",
+      "badge": "Status badge",
+      "widget": "Widget (mini panel)",
+      "widgetHint": "Paste the script where the panel should appear; it adjusts its height by itself. The iframe is the no-JavaScript alternative.",
+      "feeds": "Feeds and JSON",
+      "apiDocs": "API documentation (OpenAPI)",
+      "exportHistory": "Export incident history (JSON)"
+    },
+    "transfer": {
+      "exportHeading": "Export configuration",
+      "exportIntro": "Creates a JSON file with pages, themes and files, components, groups, templates, messages, channels, monitors, integrations and LDAP. Incidents and subscribers are not included (they have their own export).",
+      "pages": "Pages",
+      "includeLdap": "Include LDAP providers and mappings",
+      "password": "Password for secrets",
+      "passwordHint": "Optional (at least 12 characters). With a password, webhook URLs, tokens and passwords are encrypted in the file; without one, they are left out.",
+      "export": "Export",
+      "importHeading": "Import configuration",
+      "importIntro": "Upload an exported file, check the preview and confirm. Nothing is saved in the preview.",
+      "file": "File (.json)",
+      "mode": "Mode",
+      "modes": {
+        "merge": "Merge",
+        "replace": "Replace"
+      },
+      "modeHint": {
+        "merge": "Creates what is missing and updates what exists (by name). Nothing is removed.",
+        "replace": "On the pages in the file, also removes what is not in it. LDAP providers are never removed."
+      },
+      "importPassword": "Export password",
+      "importPasswordHint": "Required to import the secrets.",
+      "preview": "Preview",
+      "apply": "Import",
+      "confirmReplace": "Replace removes items from the pages that are not in the file. Continue?",
+      "previewDone": "Preview: nothing was saved.",
+      "applied": "Import finished.",
+      "noSecrets": "Secrets not imported.",
+      "page": "Page",
+      "created": "Created",
+      "updated": "Updated",
+      "removed": "Removed",
+      "action": {
+        "create": "new",
+        "update": "existing"
+      },
+      "ldap": "LDAP providers",
+      "warnings": "Warnings",
+      "warning": {
+        "secrets_not_imported": "Secrets were not imported (enter the export password).",
+        "channel_needs_secrets": "Channel skipped: requires the export password.",
+        "ldap_disabled_without_password": "LDAP provider created disabled (no bind password).",
+        "domain_taken": "Domain already used by another page.",
+        "mapping_page_missing": "LDAP mapping for a missing page.",
+        "secret_kept_new_destination": "The stored credential will be used with a new destination (check it):"
+      }
     }
   },
   "denied": {
@@ -1141,5 +1226,12 @@
     "empty": "No published metrics.",
     "back": "Back to the status page",
     "viewPerformance": "View performance"
+  },
+  "distribution": {
+    "feedTitle": "{page} — status history",
+    "badgeLabel": "status",
+    "viewPage": "View status page",
+    "embedTitle": "{page} status",
+    "subscribeFeed": "Subscribe to the feed (RSS/Atom)"
   }
 }

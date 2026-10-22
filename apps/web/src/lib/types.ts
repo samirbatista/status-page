@@ -443,3 +443,32 @@ export interface Postmortem {
   publishedAt: string | null;
   updatedAt: string;
 }
+
+// --- F6: API, distribuição e configuração -------------------------------------
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  prefix: string;
+  role: 'viewer' | 'operator' | 'admin';
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  lastUsedIp: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  createdBy: { id: string; name: string; email: string };
+}
+
+export interface ImportReport {
+  mode: 'merge' | 'replace';
+  dryRun: boolean;
+  withSecrets: boolean;
+  pages: {
+    slug: string;
+    action: 'create' | 'update';
+    changes: Record<string, { created: number; updated: number; deleted: number }>;
+    removed: string[];
+  }[];
+  ldapProviders: { created: number; updated: number; names: string[] };
+  warnings: { scope: string; message: string; detail?: string }[];
+}

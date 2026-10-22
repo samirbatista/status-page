@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   ForbiddenException,
@@ -10,7 +9,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import {
@@ -21,9 +19,9 @@ import {
 } from '@status-page/shared';
 import { z } from 'zod';
 import { type AuthContext } from '../common/auth.types.js';
-import { RequireOwner, RequirePageRole } from '../common/decorators.js';
+import { RequireOwner, RequirePageRole, SessionOnly } from '../common/decorators.js';
 import { Audit, CurrentAuth } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { UsersService } from './users.service.js';
 
 const directoryQuery = z.object({ q: z.string().trim().max(100).default('') });
@@ -42,7 +40,7 @@ export class UsersController {
   @Post('users')
   @RequireOwner()
   create(
-    @Body(new ZodPipe(userCreateSchema)) body: z.infer<typeof userCreateSchema>,
+    @ZodBody(userCreateSchema) body: z.infer<typeof userCreateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.users.create(body, audit);
@@ -52,7 +50,7 @@ export class UsersController {
   @RequireOwner()
   update(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Body(new ZodPipe(userUpdateSchema)) body: z.infer<typeof userUpdateSchema>,
+    @ZodBody(userUpdateSchema) body: z.infer<typeof userUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.users.update(userId, body, audit);
@@ -63,7 +61,7 @@ export class UsersController {
   @HttpCode(204)
   async resetPassword(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Body(new ZodPipe(resetPasswordSchema)) body: { password: string },
+    @ZodBody(resetPasswordSchema) body: { password: string },
     @Audit() audit: AuditContext,
   ) {
     await this.users.resetPassword(userId, body.password, audit);
@@ -84,7 +82,7 @@ export class UsersController {
   @Get('users/directory')
   directory(
     @CurrentAuth() auth: AuthContext,
-    @Query(new ZodPipe(directoryQuery)) query: z.infer<typeof directoryQuery>,
+    @ZodQuery(directoryQuery) query: z.infer<typeof directoryQuery>,
   ) {
     const isAdmin = auth.user.isOwner || [...auth.pageRoles.values()].includes('admin');
     if (!isAdmin) throw new ForbiddenException({ message: 'forbidden' });
@@ -92,24 +90,30 @@ export class UsersController {
   }
 
   @Get('pages/:pageId/team')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   team(@Param('pageId', ParseUUIDPipe) pageId: string) {
     return this.users.team(pageId);
   }
 
   @Put('pages/:pageId/team/:userId')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   @HttpCode(204)
   async setRole(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Body(new ZodPipe(roleBody)) body: z.infer<typeof roleBody>,
+    @ZodBody(roleBody) body: z.infer<typeof roleBody>,
     @Audit() audit: AuditContext,
   ) {
     await this.users.setRole(pageId, userId, body.role, audit);
   }
 
   @Delete('pages/:pageId/team/:userId')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   @HttpCode(204)
   async removeRole(

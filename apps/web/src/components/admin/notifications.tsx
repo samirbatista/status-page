@@ -149,6 +149,7 @@ function ChannelForm({
 }) {
   const t = useTranslations('admin.notifications');
   const tKind = useTranslations('admin.notifications.kind');
+  const tEvent = useTranslations('admin.notifications.eventType');
   const { run, pending, error } = useAction();
   const [kind, setKind] = useState<NotificationKind>(channel?.kind ?? 'slack');
   return (
@@ -161,7 +162,11 @@ function ChannelForm({
         const body = {
           name: form.get('name'),
           enabled: form.get('enabled') === 'on',
-          events: ['incident', 'maintenance'].filter((e) => form.get(`event-${e}`) === 'on'),
+          // Webhook genérico pode escolher eventos específicos; os demais, as categorias.
+          events:
+            kind === 'webhook' && form.getAll('eventType').length > 0
+              ? form.getAll('eventType')
+              : ['incident', 'maintenance'].filter((e) => form.get(`event-${e}`) === 'on'),
           locale: form.get('locale'),
           config: readConfig(kind, form),
         };
@@ -220,6 +225,23 @@ function ChannelForm({
           />
         ))}
       </fieldset>
+      {kind === 'webhook' ? (
+        <details className="sm:col-span-2" open={channel?.events.some((e) => e.includes('_'))}>
+          <summary className="cursor-pointer text-sm font-medium">{t('specificEvents')}</summary>
+          <p className="mt-1 text-xs text-[var(--muted)]">{t('specificEventsHint')}</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {NOTIFICATION_EVENT_TYPES.map((ev) => (
+              <Checkbox
+                key={ev}
+                name="eventType"
+                value={ev}
+                label={tEvent(ev)}
+                defaultChecked={channel?.events.includes(ev) ?? false}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
       <Field label={t('locale')}>
         <Select name="locale" defaultValue={channel?.locale ?? 'pt-BR'}>
           {LOCALES.map((l) => (
@@ -250,6 +272,7 @@ function ChannelForm({
 export function ChannelsManager({ pageId, channels }: { pageId: string; channels: TeamChannel[] }) {
   const t = useTranslations('admin.notifications');
   const tKind = useTranslations('admin.notifications.kind');
+  const tEvent = useTranslations('admin.notifications.eventType');
   const { run, pending, error } = useAction();
   const [editing, setEditing] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, { ok: boolean; error?: string }>>({});
@@ -285,8 +308,14 @@ export function ChannelsManager({ pageId, channels }: { pageId: string; channels
                     </p>
                     <p className="text-sm text-[var(--muted)]">
                       {tKind(c.kind)} ·{' '}
-                      {c.events.map((e) => t(`event.${e}` as 'event.incident')).join(', ')} ·{' '}
-                      {c.locale}
+                      {c.events
+                        .map((e) =>
+                          e.includes('_')
+                            ? tEvent(e as NotificationEventType)
+                            : t(`event.${e}` as 'event.incident'),
+                        )
+                        .join(', ')}{' '}
+                      · {c.locale}
                     </p>
                     {results[c.id] ? (
                       <p

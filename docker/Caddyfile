@@ -13,7 +13,12 @@
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy same-origin
+		# Só tem efeito em HTTPS (o navegador ignora em HTTP).
+		Strict-Transport-Security "max-age=31536000"
 		-Server
+		-X-Powered-By
 	}
 
 	# Rotas internas (como o "ask" do TLS) nunca ficam expostas.

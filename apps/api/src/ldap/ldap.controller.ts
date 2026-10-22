@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -23,7 +22,7 @@ import { type z } from 'zod';
 import { RequireOwner } from '../common/decorators.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { Audit, requestMeta } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { LdapService } from './ldap.service.js';
 
 /** Provedores LDAP e mapeamento de grupos: configuração global, só o Dono. */
@@ -42,7 +41,7 @@ export class LdapController {
 
   @Post()
   create(
-    @Body(new ZodPipe(ldapProviderCreateSchema)) body: z.infer<typeof ldapProviderCreateSchema>,
+    @ZodBody(ldapProviderCreateSchema) body: z.infer<typeof ldapProviderCreateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.ldap.create(body, audit);
@@ -52,7 +51,7 @@ export class LdapController {
   @Post('test-connection')
   @HttpCode(200)
   async testConnection(
-    @Body(new ZodPipe(ldapConnectionTestSchema)) body: z.infer<typeof ldapConnectionTestSchema>,
+    @ZodBody(ldapConnectionTestSchema) body: z.infer<typeof ldapConnectionTestSchema>,
     @Req() req: Request,
   ) {
     await this.rateLimit.enforce(`ldap-test:${requestMeta(req).ip}`, 30, 60);
@@ -67,7 +66,7 @@ export class LdapController {
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodPipe(ldapProviderUpdateSchema)) body: z.infer<typeof ldapProviderUpdateSchema>,
+    @ZodBody(ldapProviderUpdateSchema) body: z.infer<typeof ldapProviderUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.ldap.update(id, body, audit);
@@ -83,7 +82,7 @@ export class LdapController {
   @HttpCode(200)
   async testLogin(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodPipe(ldapLoginTestSchema)) body: z.infer<typeof ldapLoginTestSchema>,
+    @ZodBody(ldapLoginTestSchema) body: z.infer<typeof ldapLoginTestSchema>,
     @Req() req: Request,
     @Audit() audit: AuditContext,
   ) {
@@ -100,7 +99,7 @@ export class LdapController {
   @Post(':id/mappings')
   addMapping(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodPipe(ldapMappingCreateSchema)) body: z.infer<typeof ldapMappingCreateSchema>,
+    @ZodBody(ldapMappingCreateSchema) body: z.infer<typeof ldapMappingCreateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.ldap.addMapping(id, body, audit);

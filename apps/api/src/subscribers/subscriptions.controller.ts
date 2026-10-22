@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   subscribeSchema,
@@ -11,7 +11,7 @@ import { type AuthContext } from '../common/auth.types.js';
 import { Public } from '../common/decorators.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { CurrentAuth, requestMeta } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodPipe } from '../common/zod.pipe.js';
 import { SubscribersService } from './subscribers.service.js';
 
 const token = z.string().regex(/^[\w-]{20,100}$/);
@@ -42,7 +42,7 @@ export class SubscriptionsController {
   @HttpCode(200)
   async subscribe(
     @Param('slug') slug: string,
-    @Body(new ZodPipe(subscribeSchema)) body: SubscribeInput,
+    @ZodBody(subscribeSchema) body: SubscribeInput,
     @CurrentAuth() auth: AuthContext | undefined,
     @Req() req: Request,
   ) {
@@ -54,7 +54,7 @@ export class SubscriptionsController {
   @HttpCode(200)
   async confirm(
     @Param('token', new ZodPipe(token)) pendingToken: string,
-    @Body(new ZodPipe(subscriptionCodeSchema)) body: z.infer<typeof subscriptionCodeSchema>,
+    @ZodBody(subscriptionCodeSchema) body: z.infer<typeof subscriptionCodeSchema>,
     @Req() req: Request,
   ) {
     await this.limit(req, 'subscription-confirm');
@@ -90,7 +90,7 @@ export class SubscriptionsController {
   @Put('subscriptions/:token')
   async update(
     @Param('token', new ZodPipe(token)) manageToken: string,
-    @Body(new ZodPipe(subscriptionUpdateSchema)) body: z.infer<typeof subscriptionUpdateSchema>,
+    @ZodBody(subscriptionUpdateSchema) body: z.infer<typeof subscriptionUpdateSchema>,
     @Req() req: Request,
   ) {
     await this.limit(req, 'subscription-manage', 60);

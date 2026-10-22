@@ -54,6 +54,7 @@ export default async function PanelLayout({
             {me.isOwner ? (
               <NavLink href="/admin/settings/notifications">{t('notifications')}</NavLink>
             ) : null}
+            {me.isOwner ? <NavLink href="/admin/settings/transfer">{t('transfer')}</NavLink> : null}
             {isAdminSomewhere ? <NavLink href="/admin/audit">{t('audit')}</NavLink> : null}
             <NavLink href="/admin/profile">{t('profile')}</NavLink>
             <LogoutButton />

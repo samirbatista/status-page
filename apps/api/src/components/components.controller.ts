@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -24,7 +23,7 @@ import {
 import { z } from 'zod';
 import { RequireOwner, RequirePageRole } from '../common/decorators.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { ComponentsService } from './components.service.js';
 
 const attachSchema = z.object({ componentId: z.uuid() });
@@ -44,7 +43,7 @@ export class ComponentsController {
   @HttpCode(204)
   async layout(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(layoutSchema)) body: z.infer<typeof layoutSchema>,
+    @ZodBody(layoutSchema) body: z.infer<typeof layoutSchema>,
     @Audit() audit: AuditContext,
   ) {
     await this.components.setLayout(pageId, body, audit);
@@ -54,7 +53,7 @@ export class ComponentsController {
   @RequirePageRole('admin')
   createGroup(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(groupCreateSchema)) body: z.infer<typeof groupCreateSchema>,
+    @ZodBody(groupCreateSchema) body: z.infer<typeof groupCreateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.components.createGroup(pageId, body, audit);
@@ -65,7 +64,7 @@ export class ComponentsController {
   updateGroup(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('groupId', ParseUUIDPipe) groupId: string,
-    @Body(new ZodPipe(groupUpdateSchema)) body: z.infer<typeof groupUpdateSchema>,
+    @ZodBody(groupUpdateSchema) body: z.infer<typeof groupUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.components.updateGroup(pageId, groupId, body, audit);
@@ -86,7 +85,7 @@ export class ComponentsController {
   @RequirePageRole('admin')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(componentCreateSchema)) body: ComponentCreateInput,
+    @ZodBody(componentCreateSchema) body: ComponentCreateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.components.create(pageId, body, audit);
@@ -97,7 +96,7 @@ export class ComponentsController {
   @RequireOwner()
   attach(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(attachSchema)) body: z.infer<typeof attachSchema>,
+    @ZodBody(attachSchema) body: z.infer<typeof attachSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.components.attach(pageId, body.componentId, audit);
@@ -108,7 +107,7 @@ export class ComponentsController {
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('componentId', ParseUUIDPipe) componentId: string,
-    @Body(new ZodPipe(componentUpdateSchema)) body: z.infer<typeof componentUpdateSchema>,
+    @ZodBody(componentUpdateSchema) body: z.infer<typeof componentUpdateSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.components.update(pageId, componentId, body, audit);
@@ -130,7 +129,7 @@ export class ComponentsController {
   setStatus(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('componentId', ParseUUIDPipe) componentId: string,
-    @Body(new ZodPipe(componentStatusUpdateSchema)) body: { status: ComponentStatus },
+    @ZodBody(componentStatusUpdateSchema) body: { status: ComponentStatus },
     @Audit() audit: AuditContext,
   ) {
     return this.components.setStatus(pageId, componentId, body.status, audit);

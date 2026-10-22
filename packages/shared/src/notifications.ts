@@ -97,10 +97,14 @@ export function templateVariables(text: string): string[] {
 }
 
 const locale = z.enum(LOCALES);
+/**
+ * Eventos de um canal: categorias inteiras (`incident`, `maintenance`) e/ou
+ * tipos específicos (ex.: só `incident_created` e `incident_resolved`).
+ */
 const events = z
-  .array(z.enum(EVENT_CATEGORIES))
+  .array(z.enum([...EVENT_CATEGORIES, ...NOTIFICATION_EVENT_TYPES]))
   .min(1)
-  .max(2)
+  .max(EVENT_CATEGORIES.length + NOTIFICATION_EVENT_TYPES.length)
   .transform((v) => [...new Set(v)]);
 const httpUrl = z.url({ protocol: /^https?$/ }).max(2048);
 const emailList = z

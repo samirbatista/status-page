@@ -1,20 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  ParseUUIDPipe,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import { incidentTemplateSchema } from '@status-page/shared';
 import { type z } from 'zod';
 import { RequirePageRole } from '../common/decorators.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { TemplatesService } from './templates.service.js';
 
 type TemplateInput = z.infer<typeof incidentTemplateSchema>;
@@ -33,7 +23,7 @@ export class TemplatesController {
   @RequirePageRole('admin')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(incidentTemplateSchema)) body: TemplateInput,
+    @ZodBody(incidentTemplateSchema) body: TemplateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.templates.create(pageId, body, audit);
@@ -44,7 +34,7 @@ export class TemplatesController {
   update(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('templateId', ParseUUIDPipe) templateId: string,
-    @Body(new ZodPipe(incidentTemplateSchema)) body: TemplateInput,
+    @ZodBody(incidentTemplateSchema) body: TemplateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.templates.update(pageId, templateId, body, audit);

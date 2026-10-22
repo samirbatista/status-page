@@ -5,11 +5,9 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
-> **Estado atual: F5 (monitoramento).** Página pública com componentes, incidentes,
-> manutenções e barra de 90 dias; painel com papéis e auditoria; identidade visual por
-> página, domínios próprios com HTTPS automático e páginas privadas; login local ou
-> LDAP/AD com MFA; notificações para a equipe e assinantes em 8 canais; monitores e
-> webhooks de entrada que mudam o status sozinhos, métricas públicas e postmortem.
+> **Versão 1.0.0.** Todo o escopo do planejamento está implementado (F0–F6). Instalação
+> a partir das imagens publicadas: [docs/INSTALACAO.md](docs/INSTALACAO.md). Mudanças em
+> [CHANGELOG.md](CHANGELOG.md).
 
 ## O que já funciona
 
@@ -62,6 +60,13 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
   30 dias dos monitores marcados como públicos.
 - **Postmortem** em Markdown no incidente, publicado na página pública e notificado aos
   assinantes.
+- **API e distribuição** (Página → API e incorporação; guia em [docs/API.md](docs/API.md)):
+  tokens de API por página com papel e validade, documentação OpenAPI em `/api/docs`,
+  `status.json`, feeds RSS/Atom, selo SVG, widget (script ou iframe) e webhooks de saída
+  por evento.
+- **Exportar e importar** (Dono): configuração completa em JSON, com segredos cifrados por
+  senha, pré-visualização e modos mesclar/substituir. Backup completo e restauração com
+  `scripts/backup.sh` e `scripts/restore.sh`.
 - **Segurança de login**: senhas com argon2id, política de senha, bloqueio progressivo após
   5 falhas (por conta e por IP), limite de requisições, cookie `HttpOnly`/`SameSite` e
   proteção CSRF por cabeçalho.
@@ -77,12 +82,16 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
 
 ## Instalação on-premise (Docker)
 
+Guia completo (instalação do zero, atualização, backup e restauração):
+[docs/INSTALACAO.md](docs/INSTALACAO.md).
+
 Requisitos: Docker Engine com o plugin Compose.
 
 ```bash
 cp .env.example .env
 # Preencha POSTGRES_PASSWORD, APP_SECRET e SEED_OWNER_PASSWORD (instruções no arquivo)
-docker compose up -d --build --wait
+docker compose pull && docker compose up -d --no-build --wait   # imagens publicadas
+# ou, compilando do código: IMAGE_PREFIX=status-page no .env e docker compose up -d --build --wait
 ```
 
 A página fica em `http://<servidor>/`. Para HTTPS automático, defina `SITE_ADDRESS` com o

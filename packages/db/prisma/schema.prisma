@@ -4,6 +4,7 @@
 // F3: provedores LDAP, mapeamento de grupos, MFA e conta de emergência.
 // F4: notificações (canais da equipe, templates, fila de entregas) e assinantes.
 // F5: monitoramento, webhooks de entrada, alertas sugeridos e postmortem.
+// F6: tokens de API.
 
 generator client {
   provider     = "prisma-client"
@@ -207,6 +208,8 @@ model Page {
   inboundSources   InboundSource[]
   automationStates AutomationState[]
   alerts           Alert[]
+
+  apiTokens ApiToken[]
 
   @@map("pages")
 }
@@ -501,6 +504,7 @@ model User {
   totp               TotpSecret?
   webauthn           WebAuthnCredential[]
   recoveryCodes      RecoveryCode[]
+  apiTokens          ApiToken[]
 
   @@map("users")
 }
@@ -1068,6 +1072,32 @@ model Postmortem {
 // ---------------------------------------------------------------------------
 
 /// Log de auditoria somente de inclusão.
+/// Token da API administrativa: vale para uma página, com um papel e validade.
+/// Só o hash é guardado; o valor aparece uma única vez, na criação.
+model ApiToken {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  pageId      String    @map("page_id") @db.Uuid
+  name        String
+  /// SHA-256 do token (alta entropia: não precisa de hash lento).
+  tokenHash   String    @unique @map("token_hash")
+  /// Início do token, para identificá-lo na lista (`sp_AbC1…`).
+  prefix      String
+  role        Role
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(3)
+  lastUsedIp  String?   @map("last_used_ip")
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+  /// Quem criou: o token age em nome dessa pessoa e perde efeito se ela perder o acesso.
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page      Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@map("api_tokens")
+}
+
 model AuditLog {
   id         String   @id @default(uuid(7)) @db.Uuid
   actorId    String?  @map("actor_id") @db.Uuid

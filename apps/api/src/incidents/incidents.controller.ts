@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -8,7 +7,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
 } from '@nestjs/common';
 import { type AuditContext } from '@status-page/core';
 import {
@@ -22,7 +20,7 @@ import { z } from 'zod';
 import { RequirePageRole } from '../common/decorators.js';
 import { listQuerySchema } from '../common/list-query.js';
 import { Audit } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { IncidentsService } from './incidents.service.js';
 
 const incidentListSchema = listQuerySchema.extend({
@@ -40,7 +38,7 @@ export class IncidentsController {
   @RequirePageRole('viewer')
   list(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Query(new ZodPipe(incidentListSchema)) query: z.infer<typeof incidentListSchema>,
+    @ZodQuery(incidentListSchema) query: z.infer<typeof incidentListSchema>,
   ) {
     return this.incidents.list(pageId, query);
   }
@@ -58,7 +56,7 @@ export class IncidentsController {
   @RequirePageRole('operator')
   create(
     @Param('pageId', ParseUUIDPipe) pageId: string,
-    @Body(new ZodPipe(incidentCreateSchema)) body: IncidentCreateInput,
+    @ZodBody(incidentCreateSchema) body: IncidentCreateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.incidents.create(pageId, body, audit);
@@ -69,7 +67,7 @@ export class IncidentsController {
   addUpdate(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('incidentId', ParseUUIDPipe) incidentId: string,
-    @Body(new ZodPipe(incidentUpdateCreateSchema)) body: IncidentUpdateCreateInput,
+    @ZodBody(incidentUpdateCreateSchema) body: IncidentUpdateCreateInput,
     @Audit() audit: AuditContext,
   ) {
     return this.incidents.addUpdate(pageId, incidentId, body, audit);
@@ -80,7 +78,7 @@ export class IncidentsController {
   edit(
     @Param('pageId', ParseUUIDPipe) pageId: string,
     @Param('incidentId', ParseUUIDPipe) incidentId: string,
-    @Body(new ZodPipe(incidentEditSchema)) body: z.infer<typeof incidentEditSchema>,
+    @ZodBody(incidentEditSchema) body: z.infer<typeof incidentEditSchema>,
     @Audit() audit: AuditContext,
   ) {
     return this.incidents.edit(pageId, incidentId, body, audit);

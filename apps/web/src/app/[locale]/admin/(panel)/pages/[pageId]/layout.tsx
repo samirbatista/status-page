@@ -57,6 +57,9 @@ export default async function PageLayout({
         ) : null}
         {can(role, 'admin') ? <NavLink href={`${base}/team`}>{t('tabs.team')}</NavLink> : null}
         {can(role, 'admin') ? (
+          <NavLink href={`${base}/developers`}>{t('tabs.developers')}</NavLink>
+        ) : null}
+        {can(role, 'admin') ? (
           <NavLink href={`${base}/settings`}>{t('tabs.settings')}</NavLink>
         ) : null}
       </nav>

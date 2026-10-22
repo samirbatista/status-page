@@ -1,4 +1,6 @@
 import { Global, Module } from '@nestjs/common';
+import { ApiTokensController } from '../api-tokens/api-tokens.controller.js';
+import { ApiTokensService } from '../api-tokens/api-tokens.service.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { LdapController } from '../ldap/ldap.controller.js';
 import { LdapService } from '../ldap/ldap.service.js';
@@ -13,8 +15,9 @@ import { SessionService } from './session.service.js';
 
 @Global()
 @Module({
-  controllers: [AuthController, MfaController, LdapController],
+  controllers: [ApiTokensController, AuthController, MfaController, LdapController],
   providers: [
+    ApiTokensService,
     AuthService,
     AuthSettingsService,
     LdapService,
@@ -25,6 +28,7 @@ import { SessionService } from './session.service.js';
     RateLimitService,
   ],
   exports: [
+    ApiTokensService,
     AuthSettingsService,
     LdapService,
     MfaService,

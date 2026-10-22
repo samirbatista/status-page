@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -24,7 +23,7 @@ import { type AuthContext } from '../common/auth.types.js';
 import { AllowMfaStage, Public, RequireOwner } from '../common/decorators.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { Audit, CurrentAuth, requestMeta } from '../common/request-meta.js';
-import { ZodPipe } from '../common/zod.pipe.js';
+import { ZodBody } from '../common/zod.pipe.js';
 import { AuthSettingsService } from './auth-settings.service.js';
 import { AuthService } from './auth.service.js';
 import { setSessionCookie } from './session-cookie.js';
@@ -43,7 +42,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(
-    @Body(new ZodPipe(loginSchema)) body: LoginInput,
+    @ZodBody(loginSchema) body: LoginInput,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -92,7 +91,7 @@ export class AuthController {
   @HttpCode(204)
   async changePassword(
     @CurrentAuth() auth: AuthContext,
-    @Body(new ZodPipe(changePasswordSchema)) body: { currentPassword: string; newPassword: string },
+    @ZodBody(changePasswordSchema) body: { currentPassword: string; newPassword: string },
     @Req() req: Request,
   ): Promise<void> {
     await this.auth.changePassword(auth, body, requestMeta(req));
@@ -108,10 +107,7 @@ export class AuthController {
 
   @Put('settings')
   @RequireOwner()
-  settingsUpdate(
-    @Body(new ZodPipe(authSettingsSchema)) body: AuthSettings,
-    @Audit() audit: AuditContext,
-  ) {
+  settingsUpdate(@ZodBody(authSettingsSchema) body: AuthSettings, @Audit() audit: AuditContext) {
     return this.settings.update(body, audit);
   }
 }
