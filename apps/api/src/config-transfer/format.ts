@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Formato do arquivo de configuração exportado (JSON versionado). As entidades
  * são revalidadas na importação com os mesmos schemas das telas; aqui só se
  * confere a estrutura. Referências entre entidades usam chaves do arquivo
- * (`key`), nunca IDs do banco de origem.
+ * (`key`): chaves opacas; os IDs do banco de origem nunca são reaproveitados.
  */
 
 export const CONFIG_FORMAT = 'status-page-config';
@@ -12,7 +12,8 @@ export const CONFIG_VERSION = 1;
 
 /** Segredo: `p1.<iv>.<tag>.<dados>` (cifrado com a senha da exportação) ou `null`. */
 const secret = z.string().max(200_000).nullable();
-const key = z.string().min(1).max(64);
+/** Chave de referência dentro do arquivo (os exportados usam os UUIDs de origem). */
+const key = z.string().regex(/^[\w-]{1,64}$/);
 const record = z.record(z.string(), z.unknown());
 
 export const configFileSchema = z.object({

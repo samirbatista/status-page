@@ -19,7 +19,7 @@ import {
   whatsappSettingsSchema,
 } from '@status-page/shared';
 import { z } from 'zod';
-import { RequireOwner, RequirePageRole } from '../common/decorators.js';
+import { RequireOwner, RequirePageRole, SessionOnly } from '../common/decorators.js';
 import { listQuerySchema } from '../common/list-query.js';
 import { Audit } from '../common/request-meta.js';
 import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
@@ -169,6 +169,8 @@ export class NotificationsController {
   }
 
   @Get('subscribers/export.csv')
+  // Dados pessoais em lote: só pelo painel.
+  @SessionOnly()
   @RequirePageRole('admin')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="assinantes.csv"')
@@ -178,6 +180,8 @@ export class NotificationsController {
   }
 
   @Post('subscribers/import')
+  // Dados pessoais em lote: só pelo painel.
+  @SessionOnly()
   @RequirePageRole('admin')
   @HttpCode(200)
   importSubscribers(

@@ -1,4 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const scryptAsync = promisify(scrypt) as (
+  password: string,
+  salt: Buffer,
+  keylen: number,
+  options: { N: number; r: number; p: number; maxmem: number },
+) => Promise<Buffer>;
+
+/** Parâmetros aceitos: os que a exportação grava (um arquivo não escolhe o custo). */
+const KDF = { N: 2 ** 15, r: 8, p: 1 } as const;
 
 /**
  * Cifra por senha (exportação de configuração): chave derivada com scrypt e
@@ -29,27 +40,29 @@ export class PasswordBox {
     this.key = key;
   }
 
-  static create(password: string): PasswordBox {
+  static create(password: string): Promise<PasswordBox> {
     return PasswordBox.open(password, {
       kdf: 'scrypt',
       salt: randomBytes(16).toString('base64url'),
-      N: 2 ** 15,
-      r: 8,
-      p: 1,
+      ...KDF,
     });
   }
 
-  static open(password: string, params: PasswordKdf): PasswordBox {
-    if (params.kdf !== 'scrypt' || params.N > 2 ** 20 || params.r > 32 || params.p > 16) {
+  static async open(password: string, params: PasswordKdf): Promise<PasswordBox> {
+    if (
+      params.kdf !== 'scrypt' ||
+      params.N !== KDF.N ||
+      params.r !== KDF.r ||
+      params.p !== KDF.p ||
+      !/^[\w-]{16,32}$/.test(params.salt)
+    ) {
       throw new InvalidPasswordError();
     }
-    const key = scryptSync(password, Buffer.from(params.salt, 'base64url'), 32, {
-      N: params.N,
-      r: params.r,
-      p: params.p,
-      maxmem: 256 * params.N * params.r + 1024 * 1024,
+    const key = await scryptAsync(password, Buffer.from(params.salt, 'base64url'), 32, {
+      ...KDF,
+      maxmem: 64 * 1024 * 1024,
     });
-    return new PasswordBox(key, params);
+    return new PasswordBox(key, { ...params });
   }
 
   /** Formato: `p1.<iv>.<tag>.<dados>` em base64url. */

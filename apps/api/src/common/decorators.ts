@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { ApiExcludeController, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { type Role } from '@status-page/shared';
 
 export const PUBLIC_KEY = 'auth:public';
@@ -12,7 +13,23 @@ export const Public = () => SetMetadata(PUBLIC_KEY, true);
 export const RequirePageRole = (role: Exclude<Role, 'owner'>) => SetMetadata(PAGE_ROLE_KEY, role);
 
 /** Exige que o usuário seja Dono da instalação. */
-export const RequireOwner = () => SetMetadata(OWNER_KEY, true);
+/**
+ * Marca a rota (ou o controller) e a tira da documentação OpenAPI, que só
+ * descreve o que um token de API alcança.
+ */
+function markAndHide(key: string) {
+  return (target: object, property?: string | symbol, descriptor?: PropertyDescriptor) => {
+    if (descriptor && property !== undefined) {
+      SetMetadata(key, true)(target, property, descriptor);
+      ApiExcludeEndpoint()(target, property, descriptor);
+    } else {
+      SetMetadata(key, true)(target as never);
+      ApiExcludeController()(target as never);
+    }
+  };
+}
+
+export const RequireOwner = () => markAndHide(OWNER_KEY);
 
 export const MFA_STAGE_KEY = 'auth:mfaStage';
 
@@ -26,4 +43,4 @@ export const AllowMfaStage = (...stages: ('pending' | 'enroll')[]) =>
 export const SESSION_ONLY_KEY = 'auth:sessionOnly';
 
 /** Rota que exige sessão do painel: tokens de API não a alcançam. */
-export const SessionOnly = () => SetMetadata(SESSION_ONLY_KEY, true);
+export const SessionOnly = () => markAndHide(SESSION_ONLY_KEY);

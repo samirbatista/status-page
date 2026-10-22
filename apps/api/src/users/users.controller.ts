@@ -19,7 +19,7 @@ import {
 } from '@status-page/shared';
 import { z } from 'zod';
 import { type AuthContext } from '../common/auth.types.js';
-import { RequireOwner, RequirePageRole } from '../common/decorators.js';
+import { RequireOwner, RequirePageRole, SessionOnly } from '../common/decorators.js';
 import { Audit, CurrentAuth } from '../common/request-meta.js';
 import { ZodBody, ZodQuery } from '../common/zod.pipe.js';
 import { UsersService } from './users.service.js';
@@ -90,12 +90,16 @@ export class UsersController {
   }
 
   @Get('pages/:pageId/team')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   team(@Param('pageId', ParseUUIDPipe) pageId: string) {
     return this.users.team(pageId);
   }
 
   @Put('pages/:pageId/team/:userId')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   @HttpCode(204)
   async setRole(
@@ -108,6 +112,8 @@ export class UsersController {
   }
 
   @Delete('pages/:pageId/team/:userId')
+  // Um token de Admin não pode mudar a equipe (se promover e manter o acesso).
+  @SessionOnly()
   @RequirePageRole('admin')
   @HttpCode(204)
   async removeRole(

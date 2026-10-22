@@ -1,6 +1,7 @@
 # Stack completa para produção on-premise.
 #   cp .env.example .env   # e preencha os valores
-#   docker compose up -d --build
+#   docker compose pull && docker compose up -d --no-build   (imagens publicadas)
+#   ou IMAGE_PREFIX=status-page e docker compose up -d --build   (compila do código)
 name: status-page
 
 x-node-healthcheck: &node-healthcheck
@@ -51,7 +52,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: migrate
-    image: status-page/migrate:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-status-page}/migrate:${IMAGE_TAG:-latest}
     environment:
       <<: *backend-env
       SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:?defina SEED_OWNER_EMAIL no .env}
@@ -69,7 +70,7 @@ services:
       target: node-app
       args:
         PACKAGE: '@status-page/api'
-    image: status-page/api:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-status-page}/api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *backend-env
@@ -98,7 +99,7 @@ services:
       target: node-app
       args:
         PACKAGE: '@status-page/worker'
-    image: status-page/worker:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-status-page}/worker:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *backend-env
@@ -127,7 +128,7 @@ services:
       args:
         PACKAGE: '@status-page/monitor'
         SYSTEM_PACKAGES: iputils-ping
-    image: status-page/monitor:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-status-page}/monitor:${IMAGE_TAG:-latest}
     restart: unless-stopped
     # Necessário para as checagens ICMP (ping).
     cap_add:
@@ -154,7 +155,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: web
-    image: status-page/web:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-status-page}/web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       # Renderização no servidor: o Next consulta a API pela rede interna.

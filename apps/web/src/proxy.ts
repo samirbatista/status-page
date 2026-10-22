@@ -37,7 +37,7 @@ const PASSTHROUGH = /^\/(?:p|admin|denied)(?:\/|$)/;
  * `/p/<slug>/...`, mantendo o endereço que o visitante digitou. Depois o
  * next-intl trata o prefixo de idioma.
  */
-export default async function proxy(request: NextRequest) {
+async function route(request: NextRequest): Promise<NextResponse> {
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
   const slug = host ? await slugForHost(host) : null;
   if (slug) {
@@ -75,6 +75,60 @@ export default async function proxy(request: NextRequest) {
     }
   }
   return intl(request);
+}
+
+/** Mini painel para outros sites: pode ser exibido em iframe de qualquer origem. */
+// `/p/<slug>/embed` no domínio principal; `/embed` num domínio próprio (com ou sem idioma).
+const EMBED = new RegExp(`^(?:/(?:${LOCALES.join('|')}))?(?:/p/[a-z0-9-]+)?/embed/?$`);
+
+/**
+ * Content-Security-Policy com nonce por requisição: só os scripts do próprio
+ * Next (marcados com o nonce) executam. Estilos inline continuam liberados
+ * (tema da página e bibliotecas de gráfico); imagens externas só por HTTPS
+ * (HTML personalizado do tema).
+ */
+function contentSecurityPolicy(nonce: string, embed: boolean): string {
+  const dev = process.env.NODE_ENV === 'development';
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ''}`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    `connect-src 'self'${dev ? ' ws:' : ''}`,
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    // O editor de aparência pré-visualiza a página num iframe do próprio site.
+    `frame-ancestors ${embed ? '*' : "'self'"}`,
+  ].join('; ');
+}
+
+export default async function proxy(request: NextRequest) {
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const csp = contentSecurityPolicy(nonce, EMBED.test(request.nextUrl.pathname));
+  // O Next lê o nonce do cabeçalho CSP da requisição e o aplica aos seus scripts.
+  const headers = new Headers(request.headers);
+  headers.set('x-nonce', nonce);
+  headers.set('content-security-policy', csp);
+  const response = await route(new NextRequest(request, { headers }));
+  // Repassa os cabeçalhos novos para a renderização, somando-os aos que o
+  // next-intl já repassa (ex.: o idioma detectado).
+  const forward = NextResponse.next({ request: { headers } });
+  const OVERRIDE = 'x-middleware-override-headers';
+  const names = new Set(
+    [response.headers.get(OVERRIDE), forward.headers.get(OVERRIDE)]
+      .filter(Boolean)
+      .flatMap((list) => list!.split(',')),
+  );
+  forward.headers.forEach((value, key) => {
+    if (key.startsWith('x-middleware-request-') && !response.headers.has(key)) {
+      response.headers.set(key, value);
+    }
+  });
+  response.headers.set(OVERRIDE, [...names].join(','));
+  response.headers.set('Content-Security-Policy', csp);
+  return response;
 }
 
 export const config = {

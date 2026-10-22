@@ -31,6 +31,8 @@ export default async function EmbedPage({ params }: { params: Params }) {
   });
   const t = await getTranslations();
   const { page } = summary;
+  // Só páginas públicas podem ser incorporadas em outros sites.
+  if (page.visibility !== 'public') notFound();
   const href = `/${locale}/p/${page.slug}`;
 
   return (

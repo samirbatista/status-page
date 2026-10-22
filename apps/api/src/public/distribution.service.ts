@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { type Page } from '@status-page/db';
 import { messages } from '@status-page/i18n';
 import { pageBaseUrl } from '@status-page/notifiers';
@@ -267,6 +267,9 @@ ${items}
   /** Script que insere o mini painel (iframe) logo depois da própria tag. */
   async widget(slug: string, viewer: Viewer): Promise<{ page: Page; js: string }> {
     const page = await this.publicData.findPage(slug, viewer);
+    // Widget é para sites externos: páginas privadas não são incorporáveis (o
+    // acesso por IP passaria pela rede de quem visita o site de terceiros).
+    if (page.visibility !== 'public') throw new NotFoundException({ message: 'page_not_found' });
     const js = `/* Status Page — widget. Uso: <script src=".../widget.js" data-lang="pt-BR" async></script> */
 (function () {
   var script = document.currentScript;

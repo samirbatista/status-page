@@ -144,9 +144,9 @@ export class ConfigImportService {
   ): Promise<ImportReport> {
     let box: PasswordBox | null = null;
     if (file.secrets && options.password) {
-      box = PasswordBox.open(options.password, file.secrets);
-      const sample = this.firstSecret(file);
       try {
+        box = await PasswordBox.open(options.password, file.secrets);
+        const sample = this.firstSecret(file);
         if (sample) box.decrypt(sample);
       } catch (error) {
         if (error instanceof InvalidPasswordError) {
@@ -475,20 +475,51 @@ class ImportRun {
         (u) => u.id,
       ),
     );
+    const uploadKinds = new Map(
+      (
+        await tx.upload.findMany({ where: { pageId: page.id }, select: { id: true, kind: true } })
+      ).map((u) => [u.id, u.kind as string]),
+    );
+    const remapUrls = (text: unknown) =>
+      typeof text === 'string'
+        ? text.replace(/\/api\/public\/uploads\/([\w-]{1,64})/g, (match, ref: string) => {
+            const id = uploadIds.get(ref);
+            return id ? `/api/public/uploads/${id}` : match;
+          })
+        : text;
     for (const theme of data.themes) {
-      // As referências aos arquivos (campos e URLs no CSS/HTML) passam para os novos IDs.
-      let json = JSON.stringify(theme.data);
-      for (const [from, to] of uploadIds) json = json.split(from).join(to);
-      const parsed = themeSchema.safeParse(JSON.parse(json));
+      // Referências aos arquivos (campos de ID e URLs no CSS/HTML) passam para os novos IDs.
+      const source = theme.data as Record<string, unknown> & { font?: Record<string, unknown> };
+      const remapped: Record<string, unknown> = {
+        ...source,
+        customCss: remapUrls(source.customCss),
+        customHeaderHtml: remapUrls(source.customHeaderHtml),
+        customFooterHtml: remapUrls(source.customFooterHtml),
+      };
+      for (const field of IMAGE_FIELDS) {
+        const ref = source[field];
+        remapped[field] = typeof ref === 'string' ? (uploadIds.get(ref) ?? null) : null;
+      }
+      if (source.font && typeof source.font === 'object') {
+        const ref = source.font.uploadId;
+        remapped.font = {
+          ...source.font,
+          uploadId: typeof ref === 'string' ? (uploadIds.get(ref) ?? null) : null,
+        };
+      }
+      const parsed = themeSchema.safeParse(remapped);
       if (!parsed.success) {
         this.warn(scope('theme'), 'invalid_theme', issues(parsed.error));
         continue;
       }
       const value = { ...parsed.data, font: { ...parsed.data.font } };
+      // Imagem nos campos de imagem e fonte no campo de fonte (como no editor de tema).
       for (const field of IMAGE_FIELDS) {
-        if (value[field] && !pageUploads.has(value[field])) value[field] = null;
+        const id = value[field];
+        if (id && (!pageUploads.has(id) || uploadKinds.get(id) !== 'image')) value[field] = null;
       }
-      if (value.font.uploadId && !pageUploads.has(value.font.uploadId)) {
+      const fontId = value.font.uploadId;
+      if (fontId && (!pageUploads.has(fontId) || uploadKinds.get(fontId) !== 'font')) {
         value.font.uploadId = null;
       }
       try {
@@ -638,6 +669,14 @@ class ImportRun {
       }
       const input = parsed.data;
       const found = await tx.monitor.findFirst({ where: { pageId: page.id, name: input.name } });
+      if (found?.headersEnc && !input.headers && found.target !== input.target) {
+        // Os cabeçalhos guardados (credenciais) passam a ir para outro alvo: avisa.
+        this.warn(
+          scope('monitor'),
+          'secret_kept_new_destination',
+          `${input.name}: ${input.target}`,
+        );
+      }
       const headersEnc =
         input.type !== 'http'
           ? null
@@ -790,6 +829,13 @@ class ImportRun {
       const { bindPassword, ...fields } = parsed.data;
       const found = await tx.ldapProvider.findFirst({ where: { name: fields.name } });
       let providerId: string;
+      if (
+        found &&
+        !bindPassword &&
+        (found.host !== fields.host || found.bindDn !== fields.bindDn)
+      ) {
+        this.warn(`ldap:${fields.name}`, 'secret_kept_new_destination', fields.host);
+      }
       if (found) {
         providerId = (
           await tx.ldapProvider.update({

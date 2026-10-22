@@ -30,7 +30,7 @@ export class ConfigExportService {
     options: { pageIds: string[]; password: string | null; includeLdap: boolean },
     audit: AuditContext,
   ): Promise<ConfigFile> {
-    const box = options.password ? PasswordBox.create(options.password) : null;
+    const box = options.password ? await PasswordBox.create(options.password) : null;
     /** Segredo guardado (cifrado com o APP_SECRET) → cifrado com a senha, ou `null`. */
     const reseal = (stored: string | null) =>
       box && stored ? box.encrypt(this.secrets.decrypt(stored)) : null;

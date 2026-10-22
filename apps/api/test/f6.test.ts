@@ -106,6 +106,13 @@ describe('F6: API, feeds e distribuição', () => {
       const api = bearer(token);
       expect((await api.get(`/api/pages/${pageId}/monitors`)).status).toBe(200);
       expect((await api.get('/api/notifications/settings')).status).toBe(403);
+      // Não mexe na equipe (se promover sobreviveria à revogação) nem exporta assinantes.
+      const me = await h.prisma.user.findFirstOrThrow({ where: { email: 'dono@example.com' } });
+      expect((await api.get(`/api/pages/${pageId}/team`)).status).toBe(403);
+      expect((await api.put(`/api/pages/${pageId}/team/${me.id}`, { role: 'admin' })).status).toBe(
+        403,
+      );
+      expect((await api.get(`/api/pages/${pageId}/subscribers/export.csv`)).status).toBe(403);
     });
 
     it('revogado, expirado, inválido ou de quem perdeu o acesso deixa de valer', async () => {
@@ -211,6 +218,8 @@ describe('F6: API, feeds e distribuição', () => {
       expect(own.status).toBe(200);
       expect(own.headers['access-control-allow-origin']).toBeUndefined();
       expect(own.headers['cache-control']).toBe('private, no-store');
+      // Página privada não é incorporável.
+      expect((await owner.get('/api/public/pages/acme/widget.js')).status).toBe(404);
     });
   });
 
@@ -518,6 +527,12 @@ describe('F6: API, feeds e distribuição', () => {
       expect(paths).toContain('/api/pages/{pageId}/incidents');
       expect(paths.some((p) => p.startsWith('/api/auth'))).toBe(false);
       expect(paths.some((p) => p.includes('api-tokens'))).toBe(false);
+      for (const hidden of ['/team', '/export/history', 'force-verify', 'subscribers/export.csv']) {
+        expect(
+          paths.some((p) => p.includes(hidden)),
+          hidden,
+        ).toBe(false);
+      }
       const create = doc.paths['/api/pages/{pageId}/incidents']!.post as unknown as {
         security: unknown[];
         requestBody: { content: Record<string, { schema: { properties: object } }> };
@@ -532,6 +547,13 @@ describe('F6: API, feeds e distribuição', () => {
       const ui = await h.anon.get('/api/docs');
       expect(ui.status).toBe(200);
       expect(ui.text).toContain('swagger');
+      // A interface funciona sem scripts inline (a CSP da rota não libera).
+      expect(ui.text).not.toMatch(/<script>(?!\s*<\/script>)[^<]+<\/script>/);
+      expect(ui.headers['content-security-policy']).toContain("default-src 'self'");
+      const json = await h.anon.get('/api/public/pages/acme');
+      expect(json.headers['content-security-policy']).toBe(
+        "default-src 'none'; frame-ancestors 'none'",
+      );
     });
   });
 });

@@ -1131,7 +1131,8 @@
         "channel_needs_secrets": "Channel skipped: requires the export password.",
         "ldap_disabled_without_password": "LDAP provider created disabled (no bind password).",
         "domain_taken": "Domain already used by another page.",
-        "mapping_page_missing": "LDAP mapping for a missing page."
+        "mapping_page_missing": "LDAP mapping for a missing page.",
+        "secret_kept_new_destination": "The stored credential will be used with a new destination (check it):"
       }
     }
   },

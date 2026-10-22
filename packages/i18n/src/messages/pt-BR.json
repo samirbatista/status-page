@@ -1131,7 +1131,8 @@
         "channel_needs_secrets": "Canal ignorado: precisa da senha da exportação.",
         "ldap_disabled_without_password": "Provedor LDAP criado desativado (sem a senha do bind).",
         "domain_taken": "Domínio já usado por outra página.",
-        "mapping_page_missing": "Mapeamento LDAP de página inexistente."
+        "mapping_page_missing": "Mapeamento LDAP de página inexistente.",
+        "secret_kept_new_destination": "A credencial guardada será usada com um novo destino (confira):"
       }
     }
   },

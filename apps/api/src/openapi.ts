@@ -10,8 +10,6 @@ import { NOTIFICATION_EVENT_TYPES } from '@status-page/shared';
  */
 
 const DOCUMENTED = /^\/api\/(public|hooks|pages\/\{pageId\})(\/|$)/;
-/** Rotas de página que exigem sessão do painel (gestão de tokens, exportação...). */
-const SESSION_ONLY = /^\/api\/pages\/\{pageId\}\/(api-tokens)(\/|$)/;
 
 const TAG_NAMES: Record<string, string> = {
   public: 'Pública',
@@ -66,7 +64,8 @@ export function buildOpenApi(app: INestApplication, version: string): OpenAPIObj
 
   const paths: OpenAPIObject['paths'] = {};
   for (const [path, item] of Object.entries(document.paths)) {
-    if (!DOCUMENTED.test(path) || SESSION_ONLY.test(path)) continue;
+    // Rotas de sessão e de Dono já saem do documento (@SessionOnly/@RequireOwner).
+    if (!DOCUMENTED.test(path)) continue;
     const admin = path.startsWith('/api/pages/');
     for (const op of Object.values(item) as { tags?: string[]; security?: unknown[] }[]) {
       if (typeof op !== 'object' || op === null) continue;

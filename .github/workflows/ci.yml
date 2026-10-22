@@ -47,6 +47,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Vulnerabilidades conhecidas (dependências de produção)
+        run: pnpm audit --prod --audit-level high
       - name: Formatação
         run: pnpm format:check
       - name: Migrações aplicam e batem com o schema

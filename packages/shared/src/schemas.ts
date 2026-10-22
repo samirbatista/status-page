@@ -80,7 +80,7 @@ export const pageCreateSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(/^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/, 'slug inválido')
-    .refine((v) => !['admin', 'api', 'p', 'healthz'].includes(v), 'slug reservado'),
+    .refine((v) => !['admin', 'api', 'p', 'healthz', 'embed'].includes(v), 'slug reservado'),
   name: text(120),
   description: optionalText(500),
   defaultLocale: z.enum(LOCALES).default('pt-BR'),
