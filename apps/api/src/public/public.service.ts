@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   addDays,
   computeUptime,
@@ -16,6 +16,7 @@ import {
 } from '@status-page/shared';
 import { assertCanView } from '../access/page-access.js';
 import { type AuthContext, effectiveRole } from '../common/auth.types.js';
+import { API_ENV, type ApiEnv } from '../env.js';
 import { PrismaService } from '../infra/prisma.service.js';
 import { metricSeries } from '../monitoring/metrics.js';
 import { PagesService } from '../pages/pages.service.js';
@@ -46,10 +47,17 @@ const PUBLIC_UPDATE_SELECT = {
  */
 @Injectable()
 export class PublicService {
+  /** Resumos recentes de páginas públicas (visitantes anônimos), por slug. */
+  private readonly summaryCache = new Map<
+    string,
+    { expires: number; value: Promise<Awaited<ReturnType<PublicService['buildSummary']>>> }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly pages: PagesService,
     private readonly themes: ThemeService,
+    @Inject(API_ENV) private readonly env: ApiEnv,
   ) {}
 
   /** Slug da página padrão. Se for privada, o acesso é checado ao abri-la. */
@@ -60,7 +68,34 @@ export class PublicService {
     return page?.slug ?? null;
   }
 
+  /**
+   * Resumo da página. Para visitantes anônimos de páginas públicas, o resultado
+   * fica alguns segundos em memória e requisições simultâneas compartilham a
+   * mesma consulta (o cálculo dos 90 dias é o trecho mais caro da API).
+   */
   async summary(slug: string, viewer: Viewer, now = new Date()) {
+    const ttl = this.env.PUBLIC_CACHE_SECONDS * 1000;
+    if (ttl === 0 || viewer.auth || viewer.preview) return this.buildSummary(slug, viewer, now);
+    // Só páginas públicas entram no cache: nas privadas o acesso depende de quem pede.
+    const visibility = await this.prisma.client.page.findUnique({
+      where: { slug },
+      select: { visibility: true },
+    });
+    if (visibility?.visibility !== 'public') return this.buildSummary(slug, viewer, now);
+    const cached = this.summaryCache.get(slug);
+    if (cached && cached.expires > Date.now()) return cached.value;
+    const value = this.buildSummary(slug, viewer, now);
+    this.summaryCache.set(slug, { expires: Date.now() + ttl, value });
+    value.catch(() => this.summaryCache.delete(slug));
+    if (this.summaryCache.size > 500) {
+      for (const [key, entry] of this.summaryCache) {
+        if (entry.expires <= Date.now()) this.summaryCache.delete(key);
+      }
+    }
+    return value;
+  }
+
+  private async buildSummary(slug: string, viewer: Viewer, now: Date) {
     const page = await this.findPage(slug, viewer);
     const [groups, links, activeIncidents, maintenances, pastIncidents] = await Promise.all([
       this.prisma.client.componentGroup.findMany({

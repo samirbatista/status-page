@@ -76,6 +76,7 @@ services:
       <<: *backend-env
       APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env (openssl rand -base64 32)}
       UPLOAD_DIR: /data/uploads
+      PUBLIC_CACHE_SECONDS: ${PUBLIC_CACHE_SECONDS:-5}
     volumes:
       # Logos, favicons e fontes enviados pelo painel.
       - uploads-data:/data/uploads

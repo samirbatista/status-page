@@ -21,6 +21,8 @@ export const apiEnvSchema = baseEnvSchema
     SESSION_MAX_HOURS: z.coerce.number().int().positive().default(12),
     /** Diretório dos arquivos enviados (logos, fontes). Em Docker, um volume. */
     UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
+    /** Cache do resumo das páginas públicas para visitantes anônimos (0 desliga). */
+    PUBLIC_CACHE_SECONDS: z.coerce.number().int().min(0).max(60).default(5),
   });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

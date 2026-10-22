@@ -132,6 +132,17 @@ jobs:
           UPLOAD=$(curl -fsS -b cookies.txt -H 'X-Requested-With: status-page' -F file=@logo.png http://localhost/api/pages/$PAGE/uploads | jq -r .id)
           curl -fsS -D - -o /dev/null http://localhost/api/public/uploads/$UPLOAD | grep -i 'content-security-policy:.*sandbox'
           test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost/api/internal/tls-ask?domain=status.smoke.test')" = 404
+          # F6: OpenAPI, JSON de status, feed, selo e CSP com nonce.
+          curl -fsS http://localhost/api/docs/openapi.json | jq -e '.openapi == "3.1.0"'
+          curl -fsS http://localhost/api/public/pages/demo/status.json | jq -e '.status == "operational"'
+          curl -fsS http://localhost/api/public/pages/demo/feed.atom | grep -q '<feed xmlns="http://www.w3.org/2005/Atom"'
+          curl -fsS http://localhost/api/public/pages/demo/badge.svg | grep -q '<svg'
+          curl -fsS -D - -o /dev/null http://localhost/p/demo | grep -i "content-security-policy:.*'nonce-"
+          # Token de API: cria pelo painel e usa sem cookie.
+          DEMO=$(curl -fsS -b cookies.txt http://localhost/api/auth/me | jq -r '.pages[] | select(.slug=="demo") | .id')
+          TOKEN=$(api -d '{"name":"smoke","role":"viewer"}' http://localhost/api/pages/$DEMO/api-tokens | jq -r .token)
+          curl -fsS -H "Authorization: Bearer $TOKEN" http://localhost/api/pages/$DEMO/incidents > /dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" http://localhost/api/auth/me)" = 403
       - name: Logs em caso de falha
         if: failure()
         run: docker compose logs --no-color

@@ -130,16 +130,24 @@ DNS para o novo servidor.
 
 ## Capacidade
 
-Teste de carga da página pública (stack completa em um único host com 4 vCPU, página com
-10 componentes, 90 dias de histórico, 100 conexões simultâneas por 30 s via Caddy):
+Teste de carga (v1.0.0) com a stack completa num único host de 4 vCPU e 16 GB, que também
+rodava o gerador de carga ([autocannon](https://github.com/mcollina/autocannon), 100
+conexões simultâneas por 30 s, passando pelo Caddy), página de exemplo com 3 componentes:
 
-| Rota                                   | Requisições/s | Latência p50 | Latência p99 | Erros |
-| -------------------------------------- | ------------- | ------------ | ------------ | ----- |
-| `GET /api/public/pages/<slug>` (JSON)  | RESULT_API    |              |              |       |
-| `GET /p/<slug>` (HTML renderizado)     | RESULT_WEB    |              |              |       |
+| Rota                                          | Requisições/s | p50     | p99     | Erros |
+| --------------------------------------------- | ------------- | ------- | ------- | ----- |
+| `GET /api/public/pages/<slug>` (resumo JSON)  | ~1000         | 95 ms   | 170 ms  | 0     |
+| `GET /api/public/pages/<slug>/status.json`    | ~540          | 176 ms  | 291 ms  | 0     |
+| `GET /p/<slug>` (HTML, 1 réplica do `web`)    | ~85           | 1,0 s   | 5,2 s   | 0     |
+| `GET /p/<slug>` (HTML, 3 réplicas do `web`)   | ~150          | 0,3 s   | 2,2 s   | 0     |
 
-As respostas de páginas públicas têm `Cache-Control: public, max-age=15`: com um CDN ou
-proxy de cache na frente, a capacidade cresce sem limite prático.
+- O resumo das páginas públicas fica em cache por 5 s para visitantes anônimos
+  (`PUBLIC_CACHE_SECONDS`), e acessos simultâneos compartilham a mesma consulta.
+- A página HTML é renderizada no servidor a cada acesso (cada resposta leva um nonce novo
+  na CSP). Para mais visitas, aumente as réplicas do `web` — o Caddy distribui entre elas:
+  `docker compose up -d --no-build --scale web=3`.
+- 85 páginas/s equivalem a mais de 300 mil visualizações por hora; em incidentes grandes,
+  o tráfego de integrações costuma ir para o JSON, que é bem mais leve.
 
 ## Segurança
 

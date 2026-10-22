@@ -15,6 +15,8 @@ export function testEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): ApiEnv {
     REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/15',
     APP_SECRET: Buffer.alloc(32).toString('base64'),
     UPLOAD_DIR: join(tmpdir(), 'status-page-test-uploads'),
+    // Os testes conferem a página logo após cada mudança.
+    PUBLIC_CACHE_SECONDS: '0',
     ...overrides,
   });
 }

@@ -511,6 +511,29 @@ describe('F6: API, feeds e distribuição', () => {
     });
   });
 
+  describe('cache do resumo público', () => {
+    it('serve visitantes anônimos do cache só em páginas públicas', async () => {
+      // Outra instância da API, com cache (o harness recria os dados).
+      const cached = await createHarness({ PUBLIC_CACHE_SECONDS: '30' });
+      try {
+        await createUser(cached.prisma, { email: 'dono@example.com', isOwner: true });
+        const dono = await loginAs(cached, 'dono@example.com');
+        const page = (await dono.post('/api/pages', { slug: 'acme', name: 'Acme' })).body.id;
+        await dono.post(`/api/pages/${page}/components`, { name: 'API' });
+        expect((await cached.anon.get('/api/public/pages/acme')).body.components).toHaveLength(1);
+        await dono.post(`/api/pages/${page}/components`, { name: 'Banco' });
+        // Anônimo: ainda o resultado em cache; logado: sempre atual.
+        expect((await cached.anon.get('/api/public/pages/acme')).body.components).toHaveLength(1);
+        expect((await dono.get('/api/public/pages/acme')).body.components).toHaveLength(2);
+        // Página privada nunca vem do cache.
+        await dono.patch(`/api/pages/${page}`, { visibility: 'private' });
+        expect((await cached.anon.get('/api/public/pages/acme')).status).toBe(401);
+      } finally {
+        await cached.close();
+      }
+    });
+  });
+
   describe('OpenAPI', () => {
     it('documenta as rotas públicas e de página, sem rotas de sessão', async () => {
       const res = await h.anon.get('/api/docs/openapi.json');
