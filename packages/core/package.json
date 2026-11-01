@@ -29,7 +29,7 @@
     "@status-page/db": "workspace:*",
     "@status-page/shared": "workspace:*",
     "ldapts": "^9.2.0",
-    "marked": "^16.4.2",
+    "marked": "^18.1.2",
     "postcss": "^8.5.31",
     "sanitize-html": "^2.18.1",
     "undici": "^7.30.1"
