@@ -61,20 +61,9 @@ curl -fsS http://localhost/api/docs/openapi.json | jq .info.version
 
 ## Atualização
 
-1. Leia as notas da release (mudanças que exigem ação aparecem no topo).
-2. Faça um backup (seção abaixo).
-3. Troque a versão e suba de novo:
-
-```bash
-git fetch --tags && git checkout v1.1.0      # compose e Caddyfile da nova versão
-sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=1.1.0/' .env
-docker compose pull
-docker compose up -d --no-build --wait
-```
-
-As migrações rodam sozinhas no `migrate` antes de a API subir. Elas só avançam: para voltar
-a uma versão anterior, restaure o backup feito antes da atualização (o banco migrado não
-roda numa versão mais antiga).
+Veja [ATUALIZACAO.md](ATUALIZACAO.md): o caminho de atualização de cada versão (de quais
+versões é possível partir, migrações, mudanças de configuração e como voltar atrás), o
+passo a passo e os problemas comuns. Sempre confira o caminho antes de atualizar.
 
 ## Backup
 
