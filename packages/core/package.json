@@ -32,6 +32,6 @@
     "marked": "^16.4.2",
     "postcss": "^8.5.31",
     "sanitize-html": "^2.18.1",
-    "undici": "^7.30.1"
+    "undici": "^8.12.3"
   }
 }
