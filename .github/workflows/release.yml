@@ -49,6 +49,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           test "$VERSION" = "$(jq -r .version package.json)" || {
             echo "tag $GITHUB_REF_NAME diferente da versão $(jq -r .version package.json) do package.json"; exit 1; }
+          scripts/upgrade-path.sh check "$VERSION"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.service }}" >> "$GITHUB_ENV"
       - uses: docker/setup-qemu-action@v4
@@ -132,6 +133,13 @@ jobs:
             show && /^## / { exit }
             show { print }
           ' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "## Caminho de atualização"
+            scripts/upgrade-path.sh show "$VERSION"
+            echo
+            echo "Antes de atualizar, leia [docs/ATUALIZACAO.md](https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_REF_NAME/docs/ATUALIZACAO.md)."
+          } >> notes.md
           cat >> notes.md <<EOF
 
           ## Imagens
@@ -140,6 +148,6 @@ jobs:
           ghcr.io/${GITHUB_REPOSITORY,,}/{api,worker,monitor,web,migrate}:$VERSION
           \`\`\`
 
-          Instalação e atualização: [docs/INSTALACAO.md](https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_REF_NAME/docs/INSTALACAO.md).
+          Instalação: [docs/INSTALACAO.md](https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_REF_NAME/docs/INSTALACAO.md).
           EOF
           gh release create "$GITHUB_REF_NAME" --title "Status Page $VERSION" --notes-file notes.md

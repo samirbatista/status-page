@@ -6,7 +6,8 @@ visual personalizável, notificações multicanal e login local ou LDAP/AD com M
 O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
 > **Versão 1.0.2.** Todo o escopo do planejamento está implementado (F0–F6). Instalação
-> a partir das imagens publicadas: [docs/INSTALACAO.md](docs/INSTALACAO.md). Mudanças em
+> a partir das imagens publicadas: [docs/INSTALACAO.md](docs/INSTALACAO.md); troca de versão:
+> [docs/ATUALIZACAO.md](docs/ATUALIZACAO.md). Mudanças em
 > [CHANGELOG.md](CHANGELOG.md).
 
 ## O que já funciona
@@ -82,8 +83,9 @@ O escopo completo, as decisões e as fases estão em [docs/PLANEJAMENTO.md](docs
 
 ## Instalação on-premise (Docker)
 
-Guia completo (instalação do zero, atualização, backup e restauração):
-[docs/INSTALACAO.md](docs/INSTALACAO.md).
+Guia completo (instalação do zero, backup e restauração):
+[docs/INSTALACAO.md](docs/INSTALACAO.md). Para trocar de versão, siga o caminho de
+atualização em [docs/ATUALIZACAO.md](docs/ATUALIZACAO.md).
 
 Requisitos: Docker Engine com o plugin Compose.
 

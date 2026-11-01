@@ -3,6 +3,22 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Documentação e operação
+
+- Guia de atualização de versão ([docs/ATUALIZACAO.md](docs/ATUALIZACAO.md)) com o caminho
+  de atualização de cada versão: de quais versões partir, migrações, configuração, ação
+  manual e como voltar atrás. O CI exige a seção da versão e as notas da release a incluem.
+- `scripts/upgrade.sh`: atualiza seguindo o caminho documentado (recusa saltos não
+  permitidos e downgrades), com backup antes e conferência da versão depois.
+- CI instala a última release, cria dados, atualiza para o código novo e confere que nada se
+  perdeu.
+
+### Dependências
+
+- undici 8, marked 18 e atualizações menores (NestJS 12.3, BullMQ 6.5 e outras).
+
 ## [1.0.2] - 2026-11-01
 
 ### Melhorias
@@ -16,7 +32,7 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
 ## [1.0.1] - 2026-10-31
 
 Versão de segurança. **Atualize** quem estiver na 1.0.0 (passos em
-[docs/INSTALACAO.md](docs/INSTALACAO.md#atualização)).
+[docs/ATUALIZACAO.md](docs/ATUALIZACAO.md)).
 
 ### Segurança
 
