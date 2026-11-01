@@ -3,6 +3,25 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.1] - 2026-10-31
+
+Versão de segurança. **Atualize** quem estiver na 1.0.0 (passos em
+[docs/INSTALACAO.md](docs/INSTALACAO.md#atualização)).
+
+### Segurança
+
+- Next.js 16.4.0 → 16.4.3: corrige duas falhas críticas de execução remota de código sem
+  autenticação e uma negação de serviço no App Router.
+- zod 4.6.7 (consumo de memória com entradas muito grandes), body-parser 2.4, qs 6.16.1 e
+  multer 2.5 (negação de serviço), via NestJS 12.2 e override do pnpm.
+
+### Dependências
+
+- Atualizações menores agrupadas pelo Dependabot: NestJS 12.2, Prisma 7.10.1, React 19.3.1,
+  BullMQ 6.4, nodemailer 10.2, ESLint, Turborepo, Vitest e outras.
+- Dependabot passa a ignorar versões maiores de `@types/node` (os tipos acompanham o
+  Node 24 das imagens).
+
 ## [1.0.0] - 2026-10-22
 
 Primeira versão estável, com todo o escopo do [planejamento](docs/PLANEJAMENTO.md).

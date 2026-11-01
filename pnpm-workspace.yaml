@@ -14,3 +14,8 @@ onlyBuiltDependencies:
 ignoredBuiltDependencies:
   - '@parcel/watcher'
   - msgpackr-extract
+
+# Correções de segurança em dependências indiretas, até as diretas atualizarem.
+overrides:
+  # GHSA (DoS por upload pendente) — vem do @nestjs/platform-express.
+  multer: ^2.5.0

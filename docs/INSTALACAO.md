@@ -19,7 +19,7 @@ no servidor.
 
 ```bash
 # 1. Arquivos da versão (compose, Caddyfile, .env.example e scripts)
-git clone --depth 1 --branch v1.0.0 https://github.com/samirbatista/status-page.git
+git clone --depth 1 --branch v1.0.1 https://github.com/samirbatista/status-page.git
 cd status-page
 
 # 2. Configuração
@@ -46,7 +46,7 @@ Variáveis principais do `.env`:
 | `SITE_ADDRESS`        | Domínio principal (ex.: `status.empresa.com.br`) para HTTPS automático. Vazio = HTTP na porta 80. |
 | `PUBLIC_URL`          | Endereço público usado nos links das notificações e feeds.                     |
 | `IMAGE_PREFIX`        | Registro das imagens (`ghcr.io/samirbatista/status-page`).                     |
-| `IMAGE_TAG`           | Versão instalada (ex.: `1.0.0`).                                               |
+| `IMAGE_TAG`           | Versão instalada (ex.: `1.0.1`).                                               |
 
 Para compilar as imagens a partir do código (sem o registro), use `IMAGE_PREFIX=status-page`
 e `docker compose up -d --build`.
