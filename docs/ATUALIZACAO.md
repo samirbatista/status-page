@@ -21,6 +21,7 @@ versões é possível partir, o que muda no banco e na configuração e como vol
 
 | Versão | Data       | Atualiza a partir de | Migrações de banco | Ação manual | Volta sem restaurar backup |
 | ------ | ---------- | -------------------- | ------------------ | ----------- | -------------------------- |
+| 1.0.3  | 2026-11-01 | 1.0.0                | não                | não         | sim (até a 1.0.1)          |
 | 1.0.2  | 2026-11-01 | 1.0.0                | não                | não         | sim (até a 1.0.1)          |
 | 1.0.1  | 2026-10-31 | 1.0.0                | não                | não         | não recomendado (1.0.0 vulnerável) |
 | 1.0.0  | 2026-10-22 | instalação inicial   | —                  | —           | —                          |
@@ -51,7 +52,7 @@ versões é possível partir, o que muda no banco e na configuração e como vol
 ### Com o script (instalações na 1.0.3 ou mais nova)
 
 ```bash
-scripts/upgrade.sh 1.0.3 /opt/backups/status-page
+scripts/upgrade.sh 1.0.4 /opt/backups/status-page
 ```
 
 O script:
@@ -73,8 +74,8 @@ antigas que a 1.0.3, que ainda não têm o script, use a atualização manual.
 ```bash
 cd /opt/status-page
 scripts/backup.sh /opt/backups/status-page
-git fetch --tags && git checkout v1.0.2            # compose e Caddyfile da nova versão
-sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=1.0.2/' .env
+git fetch --tags && git checkout v1.0.3            # compose e Caddyfile da nova versão
+sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=1.0.3/' .env
 docker compose pull
 docker compose up -d --no-build --wait
 ```
@@ -101,8 +102,8 @@ Abra a página pública e o painel e confira um incidente recente.
   versão anterior e suba de novo:
 
   ```bash
-  git checkout v1.0.1
-  sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=1.0.1/' .env
+  git checkout v1.0.2
+  sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=1.0.2/' .env
   docker compose pull && docker compose up -d --no-build --wait
   ```
 
@@ -130,6 +131,17 @@ Abra a página pública e o painel e confira um incidente recente.
 
 Cada versão tem uma seção com os mesmos campos. Ela é conferida pelo CI e entra nas notas
 da release.
+
+### 1.0.3
+
+- **Atualiza a partir de:** 1.0.0 (salto direto de qualquer 1.0.x).
+- **Banco de dados:** nenhuma migração nova.
+- **Configuração:** só o `IMAGE_TAG` no `.env`. O `compose.yaml` e o `Caddyfile` não mudaram.
+- **Ação manual:** nenhuma. Esta é a primeira versão com o `scripts/upgrade.sh`: para chegar
+  a ela, use a atualização manual; as próximas podem usar o script.
+- **Indisponibilidade:** segundos, durante a recriação dos contêineres.
+- **Volta sem restaurar backup:** sim, para a 1.0.2 ou a 1.0.1 (não volte para a 1.0.0, que
+  tem falhas críticas).
 
 ### 1.0.2
 
