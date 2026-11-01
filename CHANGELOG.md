@@ -3,6 +3,15 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Correções
+
+- Notas da release: links para a documentação passam a apontar para os arquivos da tag no
+  GitHub (os links relativos do CHANGELOG ficavam quebrados na página da release). O CI
+  confere as notas a cada PR, e o workflow Release ganha uma execução manual que regenera
+  as notas de uma release já publicada.
+
 ## [1.0.3] - 2026-11-01
 
 ### Documentação e operação

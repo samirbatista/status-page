@@ -2,9 +2,16 @@ name: Release
 
 # Publica as imagens Docker no GitHub Container Registry e cria a release
 # quando uma tag de versão é enviada (ex.: git tag v1.0.0 && git push origin v1.0.0).
+# Execução manual (Actions → Release → Run workflow): só regenera as notas de uma release
+# existente, sem publicar imagens.
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag da release cujas notas serão regeneradas (ex.: v1.0.3)'
+        required: true
 
 permissions:
   contents: write
@@ -17,6 +24,7 @@ concurrency:
 jobs:
   images:
     name: Imagem ${{ matrix.service }}
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -127,27 +135,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          awk -v v="$VERSION" '
-            $0 ~ "^## \\[?"v"\\]?" { show=1; next }
-            show && /^## / { exit }
-            show { print }
-          ' CHANGELOG.md > notes.md
-          {
-            echo
-            echo "## Caminho de atualização"
-            scripts/upgrade-path.sh show "$VERSION"
-            echo
-            echo "Antes de atualizar, leia [docs/ATUALIZACAO.md](https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_REF_NAME/docs/ATUALIZACAO.md)."
-          } >> notes.md
-          cat >> notes.md <<EOF
+          scripts/release-notes.sh "$GITHUB_REF_NAME" > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "Status Page ${GITHUB_REF_NAME#v}" --notes-file notes.md
 
-          ## Imagens
-
-          \`\`\`
-          ghcr.io/${GITHUB_REPOSITORY,,}/{api,worker,monitor,web,migrate}:$VERSION
-          \`\`\`
-
-          Instalação: [docs/INSTALACAO.md](https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_REF_NAME/docs/INSTALACAO.md).
-          EOF
-          gh release create "$GITHUB_REF_NAME" --title "Status Page $VERSION" --notes-file notes.md
+  notes:
+    name: Regenera as notas da release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Atualiza as notas
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          scripts/release-notes.sh "$TAG" > notes.md
+          cat notes.md
+          gh release edit "$TAG" --notes-file notes.md

@@ -53,6 +53,8 @@ jobs:
         run: pnpm format:check
       - name: Caminho de atualização documentado (docs/ATUALIZACAO.md)
         run: scripts/upgrade-path.sh check
+      - name: Notas da release geram sem links relativos
+        run: scripts/release-notes.sh "v$(jq -r .version package.json)" > /dev/null
       - name: Migrações aplicam e batem com o schema
         run: |
           pnpm db:deploy
