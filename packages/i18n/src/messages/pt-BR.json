@@ -163,7 +163,22 @@
     "api_token_not_found": "Token não encontrado.",
     "invalid_config_file": "Arquivo de configuração inválido.",
     "invalid_password": "Senha incorreta para este arquivo.",
-    "file_required": "Escolha um arquivo."
+    "file_required": "Escolha um arquivo.",
+    "validation_fields": "Corrija os campos destacados.",
+    "field": {
+      "required": "Campo obrigatório.",
+      "tooSmall": "O valor mínimo é {min}.",
+      "tooBig": "O valor máximo é {max}.",
+      "tooShort": "Use pelo menos {min} caracteres.",
+      "tooLong": "Use no máximo {max} caracteres.",
+      "invalidFormat": "Formato inválido.",
+      "invalid": "Valor inválido.",
+      "invalid_target": "Endereço inválido para este tipo de monitor (HTTP: URL completa com http:// ou https://; demais: host ou IP).",
+      "invalid_host": "Host inválido: use só letras, números, pontos, hífens ou um IP.",
+      "invalid_status_list": "Use códigos ou faixas separados por vírgula, ex.: 200-299,301.",
+      "invalid_dns_server": "Informe o IP do servidor DNS.",
+      "invalid_match_field": "Use name ou label:CHAVE."
+    }
   },
   "admin": {
     "title": "Painel",
@@ -942,7 +957,8 @@
       "noChecks": "Nenhuma checagem ainda.",
       "lastCheck": "Última checagem",
       "settings": "Configuração",
-      "recent": "Últimas checagens"
+      "recent": "Últimas checagens",
+      "requiredLegend": "Campo obrigatório"
     },
     "integrations": {
       "heading": "Integrações (webhooks de entrada)",

@@ -43,9 +43,12 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
         <MaintenanceCard key={m.id} maintenance={m} slug={page.slug} timeZone={page.timezone} />
       ))}
 
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+      {/* Cada grupo em um cartão próprio, com espaço entre eles (classes sp-* para o CSS do tema). */}
+      <div className="sp-components flex flex-col gap-4">
         {summary.components.length === 0 ? (
-          <p className="px-6 py-4 text-[var(--muted)]">{t('home.noComponents')}</p>
+          <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-6 py-4 text-[var(--muted)]">
+            {t('home.noComponents')}
+          </p>
         ) : null}
         {summary.groups.map((group) => {
           const items = summary.components.filter((c) => c.groupId === group.id);
@@ -55,13 +58,13 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
             <details
               key={group.id}
               open={!group.collapsed}
-              className="border-b border-[var(--border)] last:border-b-0"
+              className="sp-group group rounded-lg border border-[var(--border)] bg-[var(--surface)]"
             >
-              <summary className="flex cursor-pointer items-center justify-between px-6 py-4 font-medium">
+              <summary className="flex cursor-pointer items-center justify-between rounded-lg px-6 py-4 font-medium group-open:rounded-b-none group-open:border-b group-open:border-[var(--border)]">
                 <span>{group.name}</span>
                 <ComponentStatusBadge status={worstOf(worst)} />
               </summary>
-              <div className="flex flex-col divide-y divide-[var(--border)] pl-4">
+              <div className="flex flex-col divide-y divide-[var(--border)]">
                 {items.map((c) => (
                   <ComponentRow key={c.id} component={c} />
                 ))}
@@ -70,13 +73,13 @@ export function StatusPageView({ summary }: { summary: PublicSummary }) {
           );
         })}
         {ungrouped.length > 0 ? (
-          <div className="flex flex-col divide-y divide-[var(--border)]">
+          <section className="sp-group flex flex-col divide-y divide-[var(--border)] rounded-lg border border-[var(--border)] bg-[var(--surface)]">
             {ungrouped.map((c) => (
               <ComponentRow key={c.id} component={c} />
             ))}
-          </div>
+          </section>
         ) : null}
-      </section>
+      </div>
 
       {summary.hasMetrics ? (
         <Link

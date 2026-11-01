@@ -176,6 +176,26 @@ describe('F5: monitoramento e automação', () => {
         monitorBody({ target: 'ftp://x' }),
       );
       expect(url.status).toBe(400);
+
+      // Cada problema aponta o campo e o tipo do erro, para o painel destacar o campo.
+      expect(bad.body.issues).toContainEqual(
+        expect.objectContaining({ path: 'config.port', code: 'invalid_type' }),
+      );
+      expect(fast.body.issues).toContainEqual(
+        expect.objectContaining({
+          path: 'intervalSeconds',
+          code: 'too_small',
+          origin: 'number',
+          minimum: 30,
+        }),
+      );
+      expect(url.body.issues).toContainEqual(
+        expect.objectContaining({ path: 'target', message: 'invalid_target' }),
+      );
+      const empty = await owner.post(`/api/pages/${pageId}/monitors`, monitorBody({ name: '' }));
+      expect(empty.body.issues).toContainEqual(
+        expect.objectContaining({ path: 'name', code: 'too_small', origin: 'string', minimum: 1 }),
+      );
     });
 
     it('"Testar agora" roda a checagem sem gravar', async () => {

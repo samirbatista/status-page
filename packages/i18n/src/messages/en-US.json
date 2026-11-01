@@ -163,7 +163,22 @@
     "api_token_not_found": "Token not found.",
     "invalid_config_file": "Invalid configuration file.",
     "invalid_password": "Wrong password for this file.",
-    "file_required": "Choose a file."
+    "file_required": "Choose a file.",
+    "validation_fields": "Fix the highlighted fields.",
+    "field": {
+      "required": "Required field.",
+      "tooSmall": "The minimum value is {min}.",
+      "tooBig": "The maximum value is {max}.",
+      "tooShort": "Use at least {min} characters.",
+      "tooLong": "Use at most {max} characters.",
+      "invalidFormat": "Invalid format.",
+      "invalid": "Invalid value.",
+      "invalid_target": "Invalid address for this monitor type (HTTP: full URL with http:// or https://; others: host or IP).",
+      "invalid_host": "Invalid host: use only letters, numbers, dots, hyphens or an IP.",
+      "invalid_status_list": "Use codes or ranges separated by commas, e.g. 200-299,301.",
+      "invalid_dns_server": "Enter the DNS server IP.",
+      "invalid_match_field": "Use name or label:KEY."
+    }
   },
   "admin": {
     "title": "Admin",
@@ -942,7 +957,8 @@
       "noChecks": "No checks yet.",
       "lastCheck": "Last check",
       "settings": "Settings",
-      "recent": "Recent checks"
+      "recent": "Recent checks",
+      "requiredLegend": "Required field"
     },
     "integrations": {
       "heading": "Integrations (inbound webhooks)",

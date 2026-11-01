@@ -85,11 +85,37 @@ const KNOWN = new Set([
   'csv_too_large',
 ]);
 
-/** Mostra o erro da API traduzido (códigos conhecidos) ou uma mensagem genérica. */
-export function ApiErrorAlert({ error }: { error: unknown }) {
+/**
+ * Mostra o erro da API traduzido (códigos conhecidos) ou uma mensagem genérica.
+ * Com `fields` (de `useFieldErrors`), os erros de validação já aparecem nos
+ * próprios campos: o alerta só aponta para eles e lista o que não tem campo.
+ */
+export function ApiErrorAlert({
+  error,
+  fields,
+}: {
+  error: unknown;
+  fields?: { any: boolean; unmatched: { path: string; message: string }[] };
+}) {
   const t = useTranslations('errors');
   if (!error) return null;
   if (error instanceof ClientApiError) {
+    if (error.code === 'validation_failed' && fields && (fields.any || fields.unmatched.length)) {
+      return (
+        <Alert>
+          {t('validation_fields')}
+          {fields.unmatched.length ? (
+            <ul className="mt-1 list-disc pl-5">
+              {fields.unmatched.map((issue) => (
+                <li key={issue.path}>
+                  <code className="text-xs">{issue.path || '—'}</code>: {issue.message}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Alert>
+      );
+    }
     if (error.code === 'password_policy') {
       const problems = (error.body?.problems as string[] | undefined) ?? [];
       return (
