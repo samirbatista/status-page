@@ -53,17 +53,45 @@ export function Field({
   hint,
   children,
   className,
+  required,
+  error,
 }: {
   label: ReactNode;
   hint?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Mostra o asterisco de campo obrigatório. */
+  required?: boolean;
+  /** Mensagem de erro do campo (destaca a borda e aparece embaixo). */
+  error?: string;
 }) {
   return (
-    <label className={cx('flex flex-col gap-1 text-sm', className)}>
-      <span className="font-medium">{label}</span>
+    <label
+      className={cx(
+        'flex flex-col gap-1 text-sm',
+        error &&
+          '[&_input]:border-status-major_outage [&_select]:border-status-major_outage [&_textarea]:border-status-major_outage',
+        className,
+      )}
+      data-invalid={error ? 'true' : undefined}
+    >
+      <span className="font-medium">
+        {label}
+        {required ? (
+          <span className="text-status-major_outage" aria-hidden="true">
+            {' '}
+            *
+          </span>
+        ) : null}
+      </span>
       {children}
-      {hint ? <span className="text-xs text-[var(--muted)]">{hint}</span> : null}
+      {error ? (
+        <span className="text-xs font-medium text-status-major_outage" role="alert">
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="text-xs text-[var(--muted)]">{hint}</span>
+      ) : null}
     </label>
   );
 }

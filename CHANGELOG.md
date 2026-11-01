@@ -3,6 +3,16 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Melhorias
+
+- Formulário de monitor marca os campos obrigatórios e mostra o erro embaixo de cada campo
+  inválido, com a mensagem traduzida (#13). A API passa a informar o tipo de cada erro de
+  validação (obrigatório, mínimo, máximo, formato), aproveitável pelos demais formulários.
+- Página pública: cada grupo de componentes em um cartão próprio, com espaço entre eles
+  (#14). Classes `sp-components` e `sp-group` disponíveis para o CSS do tema.
+
 ## [1.0.1] - 2026-10-31
 
 Versão de segurança. **Atualize** quem estiver na 1.0.0 (passos em

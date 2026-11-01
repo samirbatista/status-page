@@ -17,6 +17,7 @@ import {
   type Monitor,
   type MonitorType,
 } from '@/lib/types';
+import { useFieldErrors } from '@/lib/field-errors';
 import { useAction } from '@/lib/use-action';
 import { ApiErrorAlert } from '../api-error';
 import { LocalTime } from '../local-time';
@@ -157,6 +158,15 @@ export function MonitorForm({
   const [method, setMethod] = useState(str(monitor?.config.method, 'GET'));
   const [result, setResult] = useState<CheckResult | null>(null);
   const config = monitor?.config ?? {};
+  // Erros de validação da API (salvar ou testar), mostrados no próprio campo.
+  const fields = useFieldErrors(error ?? test.error, (path) => {
+    if (path.startsWith('headers')) return 'headers';
+    if (path === 'timeoutMs') return 'timeoutSeconds';
+    if (path === 'config.body') return 'requestBody';
+    if (path === 'config.port') return type === 'ssl' ? 'sslPort' : 'port';
+    if (path.startsWith('config.')) return path.slice('config.'.length);
+    return path;
+  });
 
   function collect(form: HTMLFormElement) {
     const data = new FormData(form);
@@ -241,10 +251,10 @@ export function MonitorForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" aria-label={tm('form')}>
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
-        <Field label={tm('name')}>
+        <Field label={tm('name')} required error={fields.get('name')}>
           <Input name="name" defaultValue={monitor?.name} required maxLength={120} />
         </Field>
-        <Field label={tm('typeLabel')}>
+        <Field label={tm('typeLabel')} required error={fields.get('type')}>
           <Select
             name="type"
             value={type}
@@ -261,7 +271,7 @@ export function MonitorForm({
           </Select>
         </Field>
       </div>
-      <Field label={tm(`target.${type}`)}>
+      <Field label={tm(`target.${type}`)} required error={fields.get('target')}>
         <Input
           name="target"
           defaultValue={monitor?.target}
@@ -274,17 +284,21 @@ export function MonitorForm({
       {type === 'http' ? (
         <fieldset className="grid gap-4 rounded-md border border-[var(--border)] p-3 sm:grid-cols-3">
           <legend className="px-1 text-sm font-medium">{tm('httpOptions')}</legend>
-          <Field label={tm('method')}>
+          <Field label={tm('method')} error={fields.get('method')}>
             <Select name="method" value={method} onChange={(e) => setMethod(e.target.value)}>
               <option>GET</option>
               <option>HEAD</option>
               <option>POST</option>
             </Select>
           </Field>
-          <Field label={tm('expectedStatus')} hint={tm('expectedStatusHint')}>
+          <Field
+            label={tm('expectedStatus')}
+            hint={tm('expectedStatusHint')}
+            error={fields.get('expectedStatus')}
+          >
             <Input name="expectedStatus" defaultValue={str(config.expectedStatus, '200-399')} />
           </Field>
-          <Field label={tm('keyword')} hint={tm('keywordHint')}>
+          <Field label={tm('keyword')} hint={tm('keywordHint')} error={fields.get('keyword')}>
             <Input name="keyword" defaultValue={str(config.keyword)} maxLength={500} />
           </Field>
           <div className="flex flex-col gap-2 sm:col-span-3">
@@ -305,12 +319,17 @@ export function MonitorForm({
             />
           </div>
           {method === 'POST' ? (
-            <Field label={tm('requestBody')} className="sm:col-span-3">
+            <Field
+              label={tm('requestBody')}
+              className="sm:col-span-3"
+              error={fields.get('requestBody')}
+            >
               <Textarea name="requestBody" defaultValue={str(config.body)} maxLength={10_000} />
             </Field>
           ) : null}
           <Field
             label={tm('headers')}
+            error={fields.get('headers')}
             hint={
               monitor?.headerNames.length
                 ? tm('headersKeep', { names: monitor.headerNames.join(', ') })
@@ -331,7 +350,7 @@ export function MonitorForm({
         </fieldset>
       ) : null}
       {type === 'tcp' ? (
-        <Field label={tm('port')} className="max-w-40">
+        <Field label={tm('port')} className="max-w-40" required error={fields.get('port')}>
           <Input
             name="port"
             type="number"
@@ -344,24 +363,24 @@ export function MonitorForm({
       ) : null}
       {type === 'dns' ? (
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label={tm('recordType')}>
+          <Field label={tm('recordType')} error={fields.get('recordType')}>
             <Select name="recordType" defaultValue={str(config.recordType, 'A')}>
               {DNS_RECORD_TYPES.map((r) => (
                 <option key={r}>{r}</option>
               ))}
             </Select>
           </Field>
-          <Field label={tm('expected')} hint={tm('expectedHint')}>
+          <Field label={tm('expected')} hint={tm('expectedHint')} error={fields.get('expected')}>
             <Input name="expected" defaultValue={str(config.expected)} />
           </Field>
-          <Field label={tm('dnsServer')} hint={tm('dnsServerHint')}>
+          <Field label={tm('dnsServer')} hint={tm('dnsServerHint')} error={fields.get('server')}>
             <Input name="server" defaultValue={str(config.server)} placeholder="1.1.1.1" />
           </Field>
         </div>
       ) : null}
       {type === 'ssl' ? (
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label={tm('port')}>
+          <Field label={tm('port')} error={fields.get('sslPort')}>
             <Input
               name="sslPort"
               type="number"
@@ -370,7 +389,7 @@ export function MonitorForm({
               defaultValue={str(config.port, '443')}
             />
           </Field>
-          <Field label={tm('minDaysLeft')}>
+          <Field label={tm('minDaysLeft')} error={fields.get('minDaysLeft')}>
             <Input
               name="minDaysLeft"
               type="number"
@@ -384,37 +403,56 @@ export function MonitorForm({
       {type === 'icmp' ? <Alert tone="info">{tm('icmpHint')}</Alert> : null}
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Field label={tm('interval')} hint={tm('intervalHint', { min: MIN_INTERVAL_SECONDS })}>
+        <Field
+          label={tm('interval')}
+          hint={tm('intervalHint', { min: MIN_INTERVAL_SECONDS })}
+          required
+          error={fields.get('intervalSeconds')}
+        >
           <Input
             name="intervalSeconds"
             type="number"
+            required
             min={MIN_INTERVAL_SECONDS}
             max={86400}
             defaultValue={monitor?.intervalSeconds ?? 60}
           />
         </Field>
-        <Field label={tm('timeout')}>
+        <Field label={tm('timeout')} required error={fields.get('timeoutSeconds')}>
           <Input
             name="timeoutSeconds"
             type="number"
+            required
             min={1}
             max={60}
             defaultValue={(monitor?.timeoutMs ?? 10_000) / 1000}
           />
         </Field>
-        <Field label={tm('failureThreshold')} hint={tm('failureThresholdHint')}>
+        <Field
+          label={tm('failureThreshold')}
+          hint={tm('failureThresholdHint')}
+          required
+          error={fields.get('failureThreshold')}
+        >
           <Input
             name="failureThreshold"
             type="number"
+            required
             min={1}
             max={20}
             defaultValue={monitor?.failureThreshold ?? 3}
           />
         </Field>
-        <Field label={tm('recoveryThreshold')} hint={tm('recoveryThresholdHint')}>
+        <Field
+          label={tm('recoveryThreshold')}
+          hint={tm('recoveryThresholdHint')}
+          required
+          error={fields.get('recoveryThreshold')}
+        >
           <Input
             name="recoveryThreshold"
             type="number"
+            required
             min={1}
             max={20}
             defaultValue={monitor?.recoveryThreshold ?? 2}
@@ -424,7 +462,7 @@ export function MonitorForm({
 
       <fieldset className="grid gap-4 rounded-md border border-[var(--border)] p-3 sm:grid-cols-2">
         <legend className="px-1 text-sm font-medium">{tm('automation')}</legend>
-        <Field label={tm('component')}>
+        <Field label={tm('component')} error={fields.get('componentId')}>
           <Select name="componentId" defaultValue={monitor?.componentId ?? ''}>
             <option value="">{tm('noComponent')}</option>
             {components.map((c) => (
@@ -434,7 +472,7 @@ export function MonitorForm({
             ))}
           </Select>
         </Field>
-        <Field label={tm('failureStatus')}>
+        <Field label={tm('failureStatus')} required error={fields.get('failureStatus')}>
           <Select name="failureStatus" defaultValue={monitor?.failureStatus ?? 'major_outage'}>
             {FAILURE_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -443,7 +481,7 @@ export function MonitorForm({
             ))}
           </Select>
         </Field>
-        <Field label={tm('mode')} hint={tm('modeHint')}>
+        <Field label={tm('mode')} hint={tm('modeHint')} required error={fields.get('mode')}>
           <Select name="mode" defaultValue={monitor?.mode ?? 'auto'}>
             {AUTOMATION_MODES.map((m) => (
               <option key={m} value={m}>
@@ -452,7 +490,7 @@ export function MonitorForm({
             ))}
           </Select>
         </Field>
-        <Field label={tm('template')} hint={tm('templateHint')}>
+        <Field label={tm('template')} hint={tm('templateHint')} error={fields.get('templateId')}>
           <Select name="templateId" defaultValue={monitor?.templateId ?? ''}>
             <option value="">{tm('noTemplate')}</option>
             {templates.map((tpl) => (
@@ -490,7 +528,10 @@ export function MonitorForm({
           {result.detail ? ` · ${result.detail}` : null}
         </div>
       ) : null}
-      <ApiErrorAlert error={error ?? test.error} />
+      <p className="text-xs text-[var(--muted)]">
+        <span className="text-status-major_outage">*</span> {tm('requiredLegend')}
+      </p>
+      <ApiErrorAlert error={error ?? test.error} fields={fields} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending}>
           {t('admin.save')}

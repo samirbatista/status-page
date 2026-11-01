@@ -104,8 +104,9 @@ export const monitorInputSchema = monitorBase
   .superRefine((value, ctx) => {
     const config = monitorConfigSchemas[value.type].safeParse(value.config);
     if (!config.success) {
+      // Repassa o problema original (código e limites) para o painel saber o tipo do erro.
       for (const issue of config.error.issues) {
-        ctx.addIssue({ code: 'custom', path: ['config', ...issue.path], message: issue.message });
+        ctx.addIssue({ ...issue, path: ['config', ...issue.path] } as never);
       }
     }
     const target =
