@@ -29,9 +29,9 @@
     "@status-page/db": "workspace:*",
     "@status-page/shared": "workspace:*",
     "ldapts": "^9.2.0",
-    "marked": "^18.1.2",
+    "marked": "^18.1.3",
     "postcss": "^8.5.32",
     "sanitize-html": "^2.18.1",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   }
 }
