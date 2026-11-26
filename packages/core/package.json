@@ -28,10 +28,10 @@
   "dependencies": {
     "@status-page/db": "workspace:*",
     "@status-page/shared": "workspace:*",
-    "ldapts": "^9.2.0",
-    "marked": "^18.1.2",
-    "postcss": "^8.5.32",
-    "sanitize-html": "^2.18.1",
-    "undici": "^8.12.3"
+    "ldapts": "^9.3.1",
+    "marked": "^18.2.1",
+    "postcss": "^8.5.33",
+    "sanitize-html": "^2.18.2",
+    "undici": "^8.13.1"
   }
 }
